@@ -1,0 +1,56 @@
+syntax = "proto3";
+/*
+protoc --go_out=proto/pb/ --go_opt=paths=source_relative \
+        --go-grpc_out=proto/pb/ --go-grpc_opt=paths=source_relative \
+        proto/tts.proto
+*/
+
+package tts;
+option go_package = "github.com/mathiasXie/gin-web/applications/tts-rpc/proto";
+
+// TTS服务定义
+service TTSService {
+    // 文本转语音
+    rpc TextToSpeech (TextToSpeechRequest) returns (TextToSpeechResponse) {}
+
+    // 获取语音列表
+    rpc VoicesList (VoicesListRequest) returns (VoicesListResponse) {}
+}
+enum Provider {
+  MICROSOFT = 0;
+  DOUBAO = 1;
+}
+
+// 文本转语音请求
+message TextToSpeechRequest {
+  string text = 1;           // 要转换的文本
+  string language = 2;       // 语言代码，如 zh-CN, en-US
+  string voice_id = 3;       // 声音ID
+  float speed = 4;          // 语速，范围 0.5-2.0
+  float pitch = 5;          // 音调，范围 0.5-2.0
+  Provider provider = 6;          // 平台，范围
+}
+
+// 文本转语音响应
+message TextToSpeechResponse {
+  bytes audio_data = 1;     // 音频数据
+  string format = 2;        // 音频格式，如 mp3, wav
+  int32 sample_rate = 3;    // 采样率
+  int32 channels = 4;       // 声道数
+} 
+
+// 获取语音列表请求
+message VoicesListRequest {
+  Provider provider = 1;    // 平台，范围
+}
+
+// 获取语音列表响应
+message VoicesListResponse {
+  repeated Voice voices = 1; // 语音列表
+}
+
+// 语音
+message Voice {
+  string voice_id = 1;       // 声音ID
+  string voice_name = 2;     // 声音名称
+}

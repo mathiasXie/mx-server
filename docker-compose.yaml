@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8888:8888"
+    environment:
+      - SERVICE_NAME=gin_web
+      - ENV=production
+    # volumes:
+    #    - ./logs:/app/logs
+    #    - ./filebeat:/var/log/filebeat
+    networks:
+      - desktop_elk            #使用之前的网络，确保能访问 http://logstash:5044
+networks:
+  desktop_elk:
+    external: true

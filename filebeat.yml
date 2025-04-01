@@ -1,0 +1,53 @@
+filebeat.inputs:
+  - type: filestream
+    id: go-web-demo-logs
+    enabled: true
+    paths:
+      - /app/logs/*-*.log         #添加需要监控的日志目录
+      - /app/logs/*-latest.log
+
+    # 日志文件相关设置
+    close_inactive: 5m
+    scan_frequency: 10s
+    clean_inactive: 72h
+    ignore_older: 72h
+
+    # 多行日志处理
+    multiline:
+      pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+      negate: true
+      match: after
+
+    # 添加服务标识
+    fields:
+      service: ${SERVICE_NAME:go_web}
+      environment: ${ENV:production}
+
+# 输出配置
+output.logstash:
+  hosts: ["${LOGSTASH_HOST:logstash}:${LOGSTASH_PORT:5045}"]
+  protocol: "tcp"
+  bulk_max_size: 2048
+  worker: 2
+
+# 处理器配置
+processors:
+  - add_host_metadata: ~
+  - add_fields:
+      target: ''
+      fields:
+        service: ${SERVICE_NAME:go_web}
+        environment: ${ENV:production}
+
+# 日志配置
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log
+  keepfiles: 7
+  permissions: 0644
+
+# 系统配置
+setup.template.enabled: false
+setup.ilm.enabled: false

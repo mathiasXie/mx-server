@@ -1,0 +1,6 @@
+{"app_name":"tts-rpc","level":"info","msg":"[metadata: %v map[:authority:[localhost:50051] content-type:[application/grpc] trace_id:[20250401165246380QAZHATWYRE] user-agent:[grpc-go/1.71.0]]]","server_name":"development","time":"2025-04-01 16:52:46","trace_id":""}
+{"app_name":"tts-rpc","level":"info","msg":"[trace_id: %v [20250401165246380QAZHATWYRE]]","server_name":"development","time":"2025-04-01 16:52:46","trace_id":""}
+{"app_name":"tts-rpc","level":"info","msg":"[Audio data length: %d bytes 173952]","server_name":"development","time":"2025-04-01 16:52:47","trace_id":"20250401165246380QAZHATWYRE"}
+{"app_name":"tts-rpc","level":"info","msg":"[req: %v text:\"在 Go 语言里，你可以借助不同的方法来获取当前程序执行时所在的目录。下面为你详细介绍几种常见的方法及其使用场景。\"  language:\"zh-CN\"  voice_id:\"zh-CN-XiaochenNeural\"]","server_name":"development","time":"2025-04-01 16:52:47","trace_id":"20250401165246380QAZHATWYRE"}
+{"app_name":"tts-rpc","level":"info","msg":"[Audio data length: 173952 bytes]","server_name":"development","time":"2025-04-01 16:55:31","trace_id":"20250401165529762JYLSOVOCHL"}
+{"app_name":"tts-rpc","level":"info","msg":"[req: %v text:\"在 Go 语言里，你可以借助不同的方法来获取当前程序执行时所在的目录。下面为你详细介绍几种常见的方法及其使用场景。\"  language:\"zh-CN\"  voice_id:\"zh-CN-XiaochenNeural\"]","server_name":"development","time":"2025-04-01 16:55:31","trace_id":"20250401165529762JYLSOVOCHL"}

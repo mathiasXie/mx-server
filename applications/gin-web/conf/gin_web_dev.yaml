@@ -1,0 +1,32 @@
+app_name: gin-web
+run_mode: test
+server:
+  port: 8090
+resource:
+  mysql:
+    host: localhost
+    port: 3306
+    user: mathias
+    password: 123456
+    db_name: spring
+    charset: utf8mb4
+    log_level: 2
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    db: 0
+  tts_rpc:
+    host: localhost
+    port: 50051
+log:
+  file_directory: "logs"
+  maxsize: 10
+  max_backups: 7
+  max_age: 30
+  compress: false
+  level: 1
+  log_id_show_header: true
+  skip_paths:
+    - "/favicon.ico"
+access_token_secret: "Huw3NA0sWDXqUH134YCiflLyNaa9MCL4IAnksJOB4xxLnqCLkr6rSHplAWY3iwMIww"
