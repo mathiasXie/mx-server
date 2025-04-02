@@ -17,7 +17,7 @@ type LogrusLogger struct {
 	appName string
 }
 
-func NewLogrusLogger(conf *config.Conf) Logger {
+func NewLogrusLogger(conf *config.Config) Logger {
 	err := os.MkdirAll(conf.Log.FileDirectory, os.ModePerm)
 	if err != nil {
 		panic(err)

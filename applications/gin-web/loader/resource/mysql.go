@@ -16,7 +16,7 @@ const (
 	maxOpen = 50
 )
 
-func InitDB(mysqlConfig *config.Mysql) (*gorm.DB, *gorm.DB) {
+func InitDB(mysqlConfig *config.MysqlConfig) (*gorm.DB, *gorm.DB) {
 	if mysqlConfig.Host == "" {
 		return nil, nil
 	}

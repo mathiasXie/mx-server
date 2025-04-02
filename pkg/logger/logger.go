@@ -59,7 +59,7 @@ func (r *ResponseLogger) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-func HttpLog(conf config.LoggerConf) gin.HandlerFunc {
+func HttpLog(conf config.LoggerConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var logId = c.GetHeader(consts.LogID)
 		if logId == "" {

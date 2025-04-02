@@ -7,7 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func InitRedis(redisConfig *config.Redis) *redis.Client {
+func InitRedis(redisConfig *config.RedisConfig) *redis.Client {
 
 	if redisConfig.Host == "" {
 		return nil

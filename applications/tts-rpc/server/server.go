@@ -6,6 +6,7 @@ import (
 
 	tts "github.com/mathiasXie/gin-web/applications/tts-rpc/internal"
 	"github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
+	"github.com/mathiasXie/gin-web/config"
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"google.golang.org/grpc/metadata"
@@ -20,8 +21,8 @@ func NewServer() *Server {
 
 	ttsConfigs := map[proto.Provider]tts.Config{
 		proto.Provider_MICROSOFT: {
-			APIKey:   "8aKNEoi9njCkkJSZIKX4mHSXDCBl8HEtRlrP4ev4Zuw7X4J93CL2JQQJ99BCACqBBLyXJ3w3AAAYACOGJKg4",
-			Endpoint: "https://southeastasia.tts.speech.microsoft.com",
+			APIKey:   config.Instance.TTS.Microsoft.APIKey,
+			Endpoint: config.Instance.TTS.Microsoft.Endpoint,
 		},
 		proto.Provider_DOUBAO: {
 			APIKey:   "your_api_key",

@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/mathiasXie/gin-web/applications/gin-web/internal/handler"
 	"github.com/mathiasXie/gin-web/applications/gin-web/internal/service"
 	"github.com/mathiasXie/gin-web/applications/gin-web/loader/resource"
@@ -146,6 +149,44 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 				"message": "success",
 				"data":    "ok",
 			})
+		}
+	})
+
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		// 允许跨域请求，在生产环境中需要根据实际情况进行调整
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	r.GET("/ws", func(ctx *gin.Context) {
+		// 升级 HTTP 连接为 WebSocket 连接
+		conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+		if err != nil {
+			log.Println("Failed to upgrade connection:", err)
+			return
+		}
+		defer conn.Close()
+
+		for {
+			// 读取客户端发送的消息
+			messageType, p, err := conn.ReadMessage()
+
+			if err != nil && err.Error() != "websocket: close 1000 (normal)" {
+				log.Println("Error reading message:", err)
+				break
+			}
+			// 打印接收到的消息
+			log.Printf("Received message: %s", string(p))
+
+			// 向客户端发送响应消息
+			err = conn.WriteMessage(messageType, p)
+			if err != nil {
+				log.Println("Error writing message:", err)
+				break
+			}
 		}
 	})
 

@@ -17,7 +17,7 @@ type TTSRpcClient struct {
 // InitTTSRPC 初始化TTS RPC客户端 连接到tts-rpc服务 实例化proto.TTSServiceClient
 // 返回proto.TTSServiceClient
 // 如果ttsRpcConfig.Host为空，则返回nil
-func InitTTSRPC(ttsRpcConfig *config.TTSRPC) TTSRpcClient {
+func InitTTSRPC(ttsRpcConfig *config.TTSRPCConfig) TTSRpcClient {
 	if ttsRpcConfig.Host == "" {
 		return TTSRpcClient{}
 	}
