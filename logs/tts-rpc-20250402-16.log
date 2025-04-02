@@ -1,0 +1,2 @@
+{"app_name":"tts-rpc","level":"info","msg":"[Audio data length: 173952 bytes]","server_name":"development","time":"2025-04-02 16:54:06","trace_id":"20250402165404966MRWFNIDKOA"}
+{"app_name":"tts-rpc","level":"info","msg":"[req: %v text:\"在 Go 语言里，你可以借助不同的方法来获取当前程序执行时所在的目录。下面为你详细介绍几种常见的方法及其使用场景。\" language:\"zh-CN\" voice_id:\"zh-CN-XiaochenNeural\"]","server_name":"development","time":"2025-04-02 16:54:06","trace_id":"20250402165404966MRWFNIDKOA"}

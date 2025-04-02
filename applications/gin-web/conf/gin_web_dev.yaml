@@ -19,6 +19,9 @@ resource:
   tts_rpc:
     host: localhost
     port: 50051
+  function_rpc:
+    host: localhost
+    port: 50052
 log:
   file_directory: "logs"
   maxsize: 10

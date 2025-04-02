@@ -1,0 +1,46 @@
+syntax = "proto3";
+/*
+protoc --go_out=proto/pb/ --go_opt=paths=source_relative \
+        --go-grpc_out=proto/pb/ --go-grpc_opt=paths=source_relative \
+        proto/function.proto
+*/
+
+package function;
+option go_package = "github.com/mathiasXie/gin-web/applications/function-rpc/proto";
+
+// 功能服务定义
+service FunctionService {
+    // 获取天气
+    rpc GetWeather (GetWeatherRequest) returns (GetWeatherResponse) {}
+    // 获取天气报告
+    rpc GetWeatherReport (GetWeatherReportRequest) returns (GetWeatherReportResponse) {}
+}
+message GetWeatherRequest {
+    string location = 1;
+}
+
+message GetWeatherResponse {
+    string Temp = 1;
+    string FeelsLike = 2;
+    string Icon = 3;
+    string Text = 4;
+    string Wind360 = 5;
+    string WindDir = 6;
+    string WindScale = 7;
+    string WindSpeed = 8;
+    string Humidity = 9;
+    string Precip = 10;
+    string Pressure = 11;
+    string Vis = 12;
+    string Cloud = 13;
+    string Dew = 14;
+}
+
+message GetWeatherReportRequest {
+    string location = 1;
+    string lang = 2;
+}
+
+message GetWeatherReportResponse {
+    string report = 1;
+}

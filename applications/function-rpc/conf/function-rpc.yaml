@@ -1,0 +1,16 @@
+app_name: function-rpc
+server:
+  port: 50052
+log:
+  file_directory: "logs"
+  maxsize: 10
+  max_backups: 7
+  max_age: 30
+  compress: false
+  level: 1
+  log_id_show_header: true
+function_rpc:
+  weather:
+    qweather:
+      api_key: "20ffef72ccd7432cac1e8c6838d63283"
+      api_host: "mn7p3ybh3m.re.qweatherapi.com"

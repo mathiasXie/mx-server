@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	function_proto "github.com/mathiasXie/gin-web/applications/function-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/gin-web/internal/handler"
 	"github.com/mathiasXie/gin-web/applications/gin-web/internal/service"
 	"github.com/mathiasXie/gin-web/applications/gin-web/loader/resource"
@@ -190,5 +191,24 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 		}
 	})
 
+	r.POST("/weather", func(ctx *gin.Context) {
+		location := ctx.PostForm("location")
+
+		//简单进行一下测试
+		client := resource.GetResource().FunctionRpcClient.FunctionServiceClient
+		resp, err := client.GetWeatherReport(ctx, &function_proto.GetWeatherReportRequest{
+			Lang:     "zh",
+			Location: location,
+		})
+		if err != nil {
+			ctx.JSON(500, gin.H{
+				"message": err.Error(),
+			})
+		}
+		ctx.JSON(200, gin.H{
+			"message": "success",
+			"data":    resp,
+		})
+	})
 	return r
 }
