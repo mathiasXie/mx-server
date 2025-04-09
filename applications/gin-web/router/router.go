@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ import (
 	"github.com/mathiasXie/gin-web/applications/gin-web/internal/service"
 	"github.com/mathiasXie/gin-web/applications/gin-web/loader/resource"
 	"github.com/mathiasXie/gin-web/applications/gin-web/middleware"
+	llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/consts"
 	"google.golang.org/grpc/metadata"
@@ -120,8 +122,8 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 		rpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 		resp, err := client.TextToSpeech(rpcCtx, &proto.TextToSpeechRequest{
-			Provider: proto.Provider_MICROSOFT,
-			VoiceId:  "zh-CN-XiaochenNeural",
+			Provider: proto.Provider_VOLCENGINE,
+			VoiceId:  "zh_female_wanwanxiaohe_moon_bigtts",
 			Language: "zh-CN",
 			Text:     text,
 		})
@@ -209,6 +211,175 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 			"message": "success",
 			"data":    resp,
 		})
+	})
+
+	r.POST("/llm", func(ctx *gin.Context) {
+		request_content := ctx.PostForm("request_content")
+
+		f_client := resource.GetResource().FunctionRpcClient.FunctionServiceClient
+		f_resp, _ := f_client.GetWeatherReport(ctx, &function_proto.GetWeatherReportRequest{
+			Lang:     "zh",
+			Location: "上海",
+		})
+
+		client := resource.GetResource().LLMRpcClient.LLMServiceClient
+		// 创建带有元数据的上下文
+		trace_id, _ := ctx.Value(consts.LogID).(string)
+		md := metadata.Pairs("trace_id", trace_id)
+		rpcCtx := metadata.NewOutgoingContext(ctx, md)
+		resp, err := client.ChatStream(rpcCtx, &llm_proto.ChatRequest{
+			Messages: []*llm_proto.ChatMessage{
+				{
+					Role:    llm_proto.ChatMessageRole_SYSTEM,
+					Content: f_resp.Report,
+				},
+				{
+					Role:    llm_proto.ChatMessageRole_USER,
+					Content: request_content,
+				},
+			},
+			Provider: llm_proto.LLMProvider_ALIYUN,
+			ModelId:  "qwen-plus",
+		})
+		if err != nil {
+			ctx.JSON(500, gin.H{
+				"message": err.Error(),
+			})
+		}
+		splitChars := "。？！；："
+		// 将字符集转换为 rune 切片
+		//splitRunes := string([]rune(splitChars))
+		full_text := ""
+		processed_index := 0
+		full_runes := make([]rune, 0)
+		for {
+			msg, err := resp.Recv()
+			if err != nil {
+				ctx.JSON(500, gin.H{
+					"message": err.Error(),
+				})
+			}
+			//流式返回
+			if msg.IsEnd {
+				break
+			}
+			full_text = fmt.Sprintf("%s%s", full_text, msg.Content)
+			fmt.Println("full_text", full_text)
+
+			// 将字符串转换为rune数组，以正确处理中文字符
+			full_runes = append(full_runes, []rune(msg.Content)...)
+			current_runes := full_runes[processed_index:] // 从未处理的位置开始，使用rune索引
+			fmt.Println("current_runes", string(current_runes))
+
+			for i, p := range current_runes {
+				if strings.Contains(splitChars, string(p)) {
+					fmt.Printf("找到句号index:%d,processed_index:%d\n", i, processed_index)
+					ctx.SSEvent("data", string(current_runes[:i]))
+					processed_index += i + 1
+				}
+			}
+			//processed_chars += len(current_text)
+			// if strings.Contains(current_text, p) {
+			// 	pos := strings.Index(current_text, p)
+			// 	// 计算实际的rune数量，而不是字节数
+			// 	posRunes := len([]rune(current_text[:pos+1])) // 包含标点符号
+			// 	processed_chars += posRunes
+			// 	ctx.SSEvent("data", current_text[:pos+1]) // 包含标点符号发送
+			// 	break
+			// }
+
+		}
+		fmt.Println("over_full_text", full_text)
+	})
+
+	r.GET("/ws_llm", func(ctx *gin.Context) {
+		// 升级 HTTP 连接为 WebSocket 连接
+		conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+		if err != nil {
+			log.Println("Failed to upgrade connection:", err)
+			return
+		}
+		defer conn.Close()
+
+		f_client := resource.GetResource().FunctionRpcClient.FunctionServiceClient
+		f_resp, _ := f_client.GetWeatherReport(ctx, &function_proto.GetWeatherReportRequest{
+			Lang:     "zh",
+			Location: "上海",
+		})
+
+		client := resource.GetResource().LLMRpcClient.LLMServiceClient
+		// 创建带有元数据的上下文
+		trace_id, _ := ctx.Value(consts.LogID).(string)
+		md := metadata.Pairs("trace_id", trace_id)
+		rpcCtx := metadata.NewOutgoingContext(ctx, md)
+
+		for {
+			// 读取客户端发送的消息
+			messageType, p, err := conn.ReadMessage()
+			if err != nil && err.Error() != "websocket: close 1000 (normal)" {
+				log.Println("Error reading message:", err)
+				break
+			}
+
+			resp, err := client.ChatStream(rpcCtx, &llm_proto.ChatRequest{
+				Messages: []*llm_proto.ChatMessage{
+					{
+						Role:    llm_proto.ChatMessageRole_SYSTEM,
+						Content: f_resp.Report,
+					},
+					{
+						Role:    llm_proto.ChatMessageRole_USER,
+						Content: string(p),
+					},
+				},
+				Provider: llm_proto.LLMProvider_ALIYUN,
+				ModelId:  "qwen-plus",
+			})
+			if err != nil {
+				ctx.JSON(500, gin.H{
+					"message": err.Error(),
+				})
+			}
+			splitChars := "。？！；："
+			// 将字符集转换为 rune 切片
+			//splitRunes := string([]rune(splitChars))
+			full_text := ""
+			processed_index := 0
+			full_runes := make([]rune, 0)
+			for {
+				msg, err := resp.Recv()
+				if err != nil {
+					ctx.JSON(500, gin.H{
+						"message": err.Error(),
+					})
+				}
+				//流式返回
+				if msg.IsEnd {
+					break
+				}
+				full_text = fmt.Sprintf("%s%s", full_text, msg.Content)
+
+				// 将字符串转换为rune数组，以正确处理中文字符
+				full_runes = append(full_runes, []rune(msg.Content)...)
+				current_runes := full_runes[processed_index:] // 从未处理的位置开始，使用rune索引
+
+				for i, p := range current_runes {
+					if strings.Contains(splitChars, string(p)) {
+						fmt.Printf("找到句号index:%d,processed_index:%d\n", i, processed_index)
+						//ctx.SSEvent("data", string(current_runes[:i]))
+						// 向客户端发送响应消息
+						err = conn.WriteMessage(messageType, []byte(string(current_runes[:i])))
+						if err != nil {
+							log.Println("Error writing message:", err)
+							break
+						}
+						processed_index += i + 1
+					}
+				}
+
+			}
+
+		}
 	})
 	return r
 }

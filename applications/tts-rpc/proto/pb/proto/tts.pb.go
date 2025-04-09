@@ -24,19 +24,19 @@ const (
 type Provider int32
 
 const (
-	Provider_MICROSOFT Provider = 0
-	Provider_DOUBAO    Provider = 1
+	Provider_MICROSOFT  Provider = 0
+	Provider_VOLCENGINE Provider = 1
 )
 
 // Enum value maps for Provider.
 var (
 	Provider_name = map[int32]string{
 		0: "MICROSOFT",
-		1: "DOUBAO",
+		1: "VOLCENGINE",
 	}
 	Provider_value = map[string]int32{
-		"MICROSOFT": 0,
-		"DOUBAO":    1,
+		"MICROSOFT":  0,
+		"VOLCENGINE": 1,
 	}
 )
 
@@ -391,11 +391,11 @@ const file_proto_tts_proto_rawDesc = "" +
 	"\x05Voice\x12\x19\n" +
 	"\bvoice_id\x18\x01 \x01(\tR\avoiceId\x12\x1d\n" +
 	"\n" +
-	"voice_name\x18\x02 \x01(\tR\tvoiceName*%\n" +
+	"voice_name\x18\x02 \x01(\tR\tvoiceName*)\n" +
 	"\bProvider\x12\r\n" +
-	"\tMICROSOFT\x10\x00\x12\n" +
+	"\tMICROSOFT\x10\x00\x12\x0e\n" +
 	"\n" +
-	"\x06DOUBAO\x10\x012\x94\x01\n" +
+	"VOLCENGINE\x10\x012\x94\x01\n" +
 	"\n" +
 	"TTSService\x12E\n" +
 	"\fTextToSpeech\x12\x18.tts.TextToSpeechRequest\x1a\x19.tts.TextToSpeechResponse\"\x00\x12?\n" +

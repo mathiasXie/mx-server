@@ -6,6 +6,7 @@ type ResourceConfig struct {
 	Redis       RedisConfig       `yaml:"redis"`
 	TTSRPC      TTSRPCConfig      `yaml:"tts_rpc"`
 	FunctionRPC FunctionRPCConfig `yaml:"function_rpc"`
+	LLMRPC      LLMRPCConfig      `yaml:"llm_rpc"`
 }
 
 // MysqlConfig MySQL配置
@@ -35,6 +36,12 @@ type TTSRPCConfig struct {
 
 // FunctionRPCConfig Function RPC服务配置
 type FunctionRPCConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+// LLMRPCConfig LLM RPC服务配置
+type LLMRPCConfig struct {
 	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }

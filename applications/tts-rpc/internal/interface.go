@@ -22,6 +22,8 @@ type Voices struct {
 type Config struct {
 	APIKey   string            // API密钥
 	Endpoint string            // 服务端点
+	Token    string            // 令牌
+	APIID    string            // 应用ID
 	Options  map[string]string // 其他配置选项
 }
 

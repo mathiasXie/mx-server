@@ -24,9 +24,10 @@ func NewServer() *Server {
 			APIKey:   config.Instance.TTS.Microsoft.APIKey,
 			Endpoint: config.Instance.TTS.Microsoft.Endpoint,
 		},
-		proto.Provider_DOUBAO: {
-			APIKey:   "your_api_key",
-			Endpoint: "https://api.tts.com/v1",
+		proto.Provider_VOLCENGINE: {
+			APIID:    config.Instance.TTS.VolcEngine.APIID,
+			Token:    config.Instance.TTS.VolcEngine.Token,
+			Endpoint: config.Instance.TTS.VolcEngine.Endpoint,
 		},
 	}
 
@@ -46,8 +47,8 @@ func (s *Server) getTTSProvider(ctx context.Context, provider proto.Provider) (t
 	switch provider {
 	case proto.Provider_MICROSOFT:
 		ttsProvider, err = tts.NewMicrosoftTTS(ttsConfig)
-	case proto.Provider_DOUBAO:
-		ttsProvider, err = tts.NewDoubaoTTS(ttsConfig)
+	case proto.Provider_VOLCENGINE:
+		ttsProvider, err = tts.NewVolcEngineTTS(ttsConfig)
 	}
 	if err != nil {
 		return nil, ctx, fmt.Errorf("failed to create tts provider: %v", err)

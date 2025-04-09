@@ -1,0 +1,60 @@
+syntax = "proto3";
+/*
+protoc --go_out=proto/pb/ --go_opt=paths=source_relative \
+        --go-grpc_out=proto/pb/ --go-grpc_opt=paths=source_relative \
+        proto/llm.proto
+*/
+
+package llm;
+option go_package = "github.com/mathiasXie/gin-web/applications/llm-rpc/proto";
+
+// LLM服务定义
+service LLMService {
+    // 大模型对话流式返回
+    rpc ChatStream (ChatRequest) returns (stream ChatResponse) {}
+
+    // 获取模型列表
+    rpc ModelList (ModelListRequest) returns (ModelListResponse) {}
+}
+enum LLMProvider {
+  VOLCENGINE = 0;
+  ALIYUN = 1;
+}
+
+// 聊天请求
+message ChatRequest {
+  repeated ChatMessage messages = 1;
+  LLMProvider provider = 2;     // 平台，范围
+  string model_id = 3;          // 模型ID
+}
+
+enum ChatMessageRole {
+  SYSTEM = 0;
+  USER = 1;
+  ASSISTANT = 2;
+}
+
+// 聊天消息
+message ChatMessage {
+  ChatMessageRole role = 1;    // 角色：system/user/assistant
+  string content = 2; // 消息内容
+}
+
+// 聊天响应
+message ChatResponse {
+  string id = 1;
+  string content = 2;           // 回复的消息
+  bool is_end = 3;           // 是否结束
+  int64 created = 4;          // 创建时间
+  string model = 5;           // 模型
+} 
+
+// 获取模型列表请求
+message ModelListRequest {
+  LLMProvider provider = 1; // 平台，范围
+}
+
+// 获取模型列表响应
+message ModelListResponse {
+  repeated string models = 1; // 模型列表
+}

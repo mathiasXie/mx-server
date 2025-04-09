@@ -13,6 +13,27 @@ tts:
   microsoft:
     api_key: "8aKNEoi9njCkkJSZIKX4mHSXDCBl8HEtRlrP4ev4Zuw7X4J93CL2JQQJ99BCACqBBLyXJ3w3AAAYACOGJKg4"
     endpoint: "https://southeastasia.tts.speech.microsoft.com"
-  doubao:
-    api_key: "your_api_key"
-    endpoint: "https://api.tts.com/v1"
+    voice-list:
+      - name: "Xiaochen Dragon"
+        id: "zh-CN-Xiaochen:DragonHDLatestNeural"
+      - name: "晓伊"
+        id: "zh-CN-XiaoyiNeural"
+      - name: "爽快思思"
+        id: "zh_female_shuangkuaisisi_emo_v2_mars_bigtts"
+  volcengine:
+    api_id: "6742354672"
+    token: "EwLwTnlv1AsfoSFZKpYZXuo77AXNrvti"
+    endpoint: "wss://openspeech.bytedance.com/api/v1/tts/ws_binary"
+    voice-list:
+      - name: "湾湾小何"
+        id: "zh_female_wanwanxiaohe_moon_bigtts"
+      - name: "撒娇学妹"
+        id: "zh_female_yuanqinvyou_moon_bigtts"
+      - name: "爽快思思"
+        id: "zh_female_shuangkuaisisi_emo_v2_mars_bigtts"
+      - name: "猴哥"
+        id: "zh_male_sunwukong_mars_bigtts"
+      - name: "温柔小雪"
+        id: "zh_female_wenrouxiaoxue_moon_bigtts"
+
+

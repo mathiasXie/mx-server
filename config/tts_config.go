@@ -2,8 +2,8 @@ package config
 
 // TTSConfig TTS服务配置
 type TTSConfig struct {
-	Microsoft MicrosoftConfig `yaml:"microsoft"`
-	Doubao    DoubaoConfig    `yaml:"doubao"`
+	Microsoft  MicrosoftConfig  `yaml:"microsoft"`
+	VolcEngine VolcEngineConfig `yaml:"volcengine"`
 }
 
 // MicrosoftConfig 微软TTS配置
@@ -12,8 +12,9 @@ type MicrosoftConfig struct {
 	Endpoint string `yaml:"endpoint"`
 }
 
-// DoubaoConfig 豆包TTS配置
-type DoubaoConfig struct {
-	APIKey   string `yaml:"api_key"`
+// VolcengineConfig 豆包TTS配置
+type VolcEngineConfig struct {
+	APIID    string `yaml:"api_id"`
+	Token    string `yaml:"token"`
 	Endpoint string `yaml:"endpoint"`
 }

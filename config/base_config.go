@@ -10,6 +10,7 @@ type Config struct {
 	AccessTokenSecret string         `yaml:"access_token_secret" json:"access_token_secret"`
 	TTS               TTSConfig      `yaml:"tts" json:"tts"`
 	FunctionRPC       FunctionConfig `yaml:"function_rpc" json:"function_rpc"`
+	LLM               LLMConfig      `yaml:"llm" json:"llm"`
 }
 
 // Instance 全局配置实例

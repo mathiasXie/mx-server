@@ -1,0 +1,29 @@
+app_name: llm-rpc
+server:
+  port: 50053
+log:
+  file_directory: "logs"
+  maxsize: 10
+  max_backups: 7
+  max_age: 30
+  compress: false
+  level: 1
+  log_id_show_header: true
+llm:
+  volcengine:
+    auth_token: "6473c955-206c-4bae-af25-97c292c5ee50"
+    base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    default_model_id: "deepseek-v3-250324"
+    models:
+      - deepseek-v3-250324
+      - deepseek-v3-250324-pro
+      - deepseek-v3-250324-pro-instruct
+      - deepseek-v3-250324-instruct
+      - deepseek-v3-250324-instruct-pro
+  aliyun:
+    api_key: "sk-69734b46cb6a4a24a0f29ab84f7451ae"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1/"
+    default_model_id: "qwen-plus"
+    models:
+      - deepseek-v3-250324
+
