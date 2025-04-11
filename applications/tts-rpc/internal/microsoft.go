@@ -48,9 +48,7 @@ func (m *MicrosoftTTS) TextToSpeech(ctx context.Context, text string, language s
 	// 构建SSML
 	ssml := fmt.Sprintf(`
 		<speak version='1.0' xml:lang='%s'>
-			<voice xml:lang='%s' xml:gender='Male' name='%s'>
-				%s
-			</voice>
+			<voice xml:lang='%s' xml:gender='Male' name='%s'>%s</voice>
 		</speak>`, language, language, voiceID, text)
 
 	// 构建请求

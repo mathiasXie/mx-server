@@ -24,7 +24,7 @@ go run applications/function-rpc/main.go -f applications/function-rpc/conf &
 PIDS+=($!)
 go run applications/llm-rpc/main.go -f applications/llm-rpc/conf &
 PIDS+=($!)
-go run applications/gin-web/main.go -f applications/gin-web/conf &
+go run applications/xiaozhi-server/main.go -f applications/xiaozhi-server/conf &
 PIDS+=($!)
 
 # 等待所有进程

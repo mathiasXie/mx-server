@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -19,6 +20,7 @@ import (
 	"github.com/mathiasXie/gin-web/applications/gin-web/middleware"
 	llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
 	"github.com/mathiasXie/gin-web/consts"
 	"google.golang.org/grpc/metadata"
 )
@@ -123,7 +125,7 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 
 		resp, err := client.TextToSpeech(rpcCtx, &proto.TextToSpeechRequest{
 			Provider: proto.Provider_VOLCENGINE,
-			VoiceId:  "zh_female_wanwanxiaohe_moon_bigtts",
+			VoiceId:  "zh-CN-Xiaochen:DragonHDLatestNeural",
 			Language: "zh-CN",
 			Text:     text,
 		})
@@ -319,6 +321,15 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 			if err != nil && err.Error() != "websocket: close 1000 (normal)" {
 				log.Println("Error reading message:", err)
 				break
+			}
+			chatRequest := dto.ChatRequest{}
+			err = json.Unmarshal(p, &chatRequest)
+			if err != nil {
+				log.Println("Error unmarshalling message:", err)
+				break
+			}
+			if chatRequest.Type == dto.ChatTypeHello {
+
 			}
 
 			resp, err := client.ChatStream(rpcCtx, &llm_proto.ChatRequest{

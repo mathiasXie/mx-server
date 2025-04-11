@@ -19,6 +19,7 @@ service TTSService {
 enum Provider {
   MICROSOFT = 0;
   VOLCENGINE = 1;
+  ALIYUN = 2;
 }
 
 // 文本转语音请求

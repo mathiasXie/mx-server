@@ -3,8 +3,10 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/gin-gonic/gin"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/golang-jwt/jwt"
@@ -13,7 +15,6 @@ import (
 
 	"math/rand"
 	"net"
-	"os"
 	"strings"
 	"time"
 )

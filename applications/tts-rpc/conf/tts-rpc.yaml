@@ -35,5 +35,13 @@ tts:
         id: "zh_male_sunwukong_mars_bigtts"
       - name: "温柔小雪"
         id: "zh_female_wenrouxiaoxue_moon_bigtts"
+  aliyun:
+    api_key: "sk-69734b46cb6a4a24a0f29ab84f7451ae"
+    voice-list:
+      - name: "龙小淳"
+        id: "longxiaochun"
+      - name: "龙小夏"
+        id: "longxiaoxia"
+
 
 

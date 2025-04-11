@@ -113,7 +113,7 @@ func setupInput(text, voiceType, opt, appid string) []byte {
 	params["user"]["uid"] = "uid"
 	params["audio"] = make(map[string]interface{})
 	params["audio"]["voice_type"] = voiceType
-	params["audio"]["encoding"] = "mp3"
+	params["audio"]["encoding"] = "opus"
 	params["audio"]["speed_ratio"] = 1.0
 	params["audio"]["volume_ratio"] = 1.0
 	params["audio"]["pitch_ratio"] = 1.0

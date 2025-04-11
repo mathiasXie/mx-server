@@ -29,6 +29,10 @@ func NewServer() *Server {
 			Token:    config.Instance.TTS.VolcEngine.Token,
 			Endpoint: config.Instance.TTS.VolcEngine.Endpoint,
 		},
+		proto.Provider_ALIYUN: {
+			APIKey:   config.Instance.TTS.Aliyun.APIKey,
+			Endpoint: config.Instance.TTS.Aliyun.Endpoint,
+		},
 	}
 
 	return &Server{
@@ -49,6 +53,8 @@ func (s *Server) getTTSProvider(ctx context.Context, provider proto.Provider) (t
 		ttsProvider, err = tts.NewMicrosoftTTS(ttsConfig)
 	case proto.Provider_VOLCENGINE:
 		ttsProvider, err = tts.NewVolcEngineTTS(ttsConfig)
+	case proto.Provider_ALIYUN:
+		ttsProvider, err = tts.NewAliyunTTS(ttsConfig)
 	}
 	if err != nil {
 		return nil, ctx, fmt.Errorf("failed to create tts provider: %v", err)
