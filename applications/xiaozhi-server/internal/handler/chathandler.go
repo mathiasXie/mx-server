@@ -15,7 +15,7 @@ import (
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"github.com/mathiasXie/gin-web/utils"
-	audio_utils "github.com/mathiasXie/gin-web/utils/audio/utils"
+	audio_utils "github.com/mathiasXie/gin-web/utils/audio"
 	"google.golang.org/grpc/metadata"
 )
 
