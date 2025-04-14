@@ -17,6 +17,15 @@ cleanup() {
 # 设置信号处理
 trap cleanup SIGINT SIGTERM
 
+# 设置环境变量
+export SPEECHSDK_ROOT="$HOME/speechsdk"
+export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
+export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
+export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
+
+# 确保系统库路径在LD_LIBRARY_PATH中
+export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
+
 # 启动所有服务
 go run applications/tts-rpc/main.go -f applications/tts-rpc/conf &
 PIDS+=($!)

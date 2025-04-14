@@ -3,11 +3,16 @@ package tts
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/Microsoft/cognitive-services-speech-sdk-go/common"
+	"github.com/Microsoft/cognitive-services-speech-sdk-go/speech"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 )
 
@@ -84,6 +89,88 @@ func (m *MicrosoftTTS) TextToSpeech(ctx context.Context, text string, language s
 	logger.CtxInfo(ctx, fmt.Sprintf("Audio data length: %d bytes", len(audioData)))
 
 	return audioData, "mp3", 16000, 1, nil
+}
+
+func (m *MicrosoftTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+	region := "southeastasia"
+	config, err := speech.NewSpeechConfigFromSubscription(m.config.APIKey, region)
+	if err != nil {
+		fmt.Println("Got an error: ", err)
+		return &json.MarshalerError{}
+	}
+	defer config.Close()
+
+	config.SetSpeechSynthesisOutputFormat(common.Audio16Khz32KBitRateMonoMp3)
+
+	speechSynthesizer, err := speech.NewSpeechSynthesizerFromConfig(config, nil)
+	if err != nil {
+		fmt.Println("Got an error: ", err)
+		return err
+	}
+	defer speechSynthesizer.Close()
+
+	for {
+		text = strings.TrimSuffix(text, "\n")
+		if len(text) == 0 {
+			break
+		}
+
+		task := speechSynthesizer.StartSpeakingTextAsync(text)
+		var outcome speech.SpeechSynthesisOutcome
+		select {
+		case outcome = <-task:
+		case <-time.After(60 * time.Second):
+			fmt.Println("Timed out")
+			return errors.New("Timed out")
+		}
+		defer outcome.Close()
+		if outcome.Error != nil {
+			fmt.Println("Got an error: ", outcome.Error)
+			return outcome.Error
+		}
+
+		// in most case we want to streaming receive the audio to lower the latency,
+		// we can use AudioDataStream to do so.
+		stream, err := speech.NewAudioDataStreamFromSpeechSynthesisResult(outcome.Result)
+		defer stream.Close()
+		if err != nil {
+			fmt.Println("Got an error: ", err)
+			return err
+		}
+
+		var all_audio []byte
+		audio_chunk := make([]byte, 10240)
+		i := 1
+		for {
+			n, err := stream.Read(audio_chunk)
+
+			if err == io.EOF {
+				respChan <- TTSStreamResponse{
+					IsEnd: true,
+				}
+				fmt.Println("=====\n break of for range\n======")
+				break
+			}
+			fmt.Println("rpc come in ")
+			// 将音频数据保存到文件
+			filePath := fmt.Sprintf("logs/output_test_%d.mp3", i)
+			err = os.WriteFile(filePath, audio_chunk[:n], 0644)
+			if err != nil {
+				fmt.Println("Got an error: ", err)
+			}
+			// 发送响应
+			respChan <- TTSStreamResponse{
+				Audio:  audio_chunk[:n],
+				Sample: 16000,
+				Format: "mp3",
+			}
+			all_audio = append(all_audio, audio_chunk[:n]...)
+			i++
+		}
+
+		fmt.Printf("Read [%d] bytes from audio data stream.\n", len(all_audio))
+	}
+	return nil
 }
 
 func (m *MicrosoftTTS) VoicesList(ctx context.Context) ([]Voices, error) {

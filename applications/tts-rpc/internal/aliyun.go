@@ -99,6 +99,11 @@ func (m *AliyunTTS) TextToSpeech(ctx context.Context, text string, language stri
 	return audio, format, 22050, 1, nil
 }
 
+func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+
+	return nil
+}
+
 func (m *AliyunTTS) VoicesList(ctx context.Context) ([]Voices, error) {
 	voices := make([]Voices, 0)
 

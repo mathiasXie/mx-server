@@ -36,7 +36,7 @@ out/
 
 conf/*.yaml
 logs/
-
+tmp/
 *.mp3
 *.wav
 *.m4a

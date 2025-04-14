@@ -13,6 +13,8 @@ service TTSService {
     // 文本转语音
     rpc TextToSpeech (TextToSpeechRequest) returns (TextToSpeechResponse) {}
 
+    rpc TextToSpeechStream (TextToSpeechRequest) returns (stream TextToSpeechResponse) {}
+
     // 获取语音列表
     rpc VoicesList (VoicesListRequest) returns (VoicesListResponse) {}
 }
@@ -38,6 +40,7 @@ message TextToSpeechResponse {
   string format = 2;        // 音频格式，如 mp3, wav
   int32 sample_rate = 3;    // 采样率
   int32 channels = 4;       // 声道数
+  bool is_end = 5;
 } 
 
 // 获取语音列表请求

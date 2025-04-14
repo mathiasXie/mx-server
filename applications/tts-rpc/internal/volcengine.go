@@ -94,6 +94,11 @@ func (d *VolcEngineTTS) TextToSpeech(ctx context.Context, text string, language 
 	return audio, "mp3", 16000, 1, nil
 }
 
+func (m *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+
+	return nil
+}
+
 func (m *VolcEngineTTS) VoicesList(ctx context.Context) ([]Voices, error) {
 
 	voices := make([]Voices, 0)

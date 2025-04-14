@@ -101,6 +101,57 @@ func (s *Server) TextToSpeech(ctx context.Context, req *proto.TextToSpeechReques
 	}, nil
 }
 
+func (s *Server) TextToSpeechStream(req *proto.TextToSpeechRequest, stream proto.TTSService_TextToSpeechStreamServer) error {
+	ttsProvider, ctx, err := s.getTTSProvider(stream.Context(), req.Provider)
+	if err != nil {
+		logger.CtxError(ctx, "failed to get tts provider: %v", err)
+		return fmt.Errorf("failed to get tts provider: %v", err)
+	}
+
+	// 创建响应通道
+	respChan := make(chan tts.TTSStreamResponse)
+
+	// 启动流式生成
+	go func() {
+		err := ttsProvider.TextToSpeechStream(ctx, req.Text, req.Language, req.VoiceId, respChan)
+		if err != nil {
+			logger.CtxError(stream.Context(), "failed to chat stream: %v", err)
+			// 发送错误响应
+			respChan <- tts.TTSStreamResponse{
+				IsEnd: true,
+			}
+		}
+	}()
+
+	// 处理流式响应
+	for {
+		select {
+		case resp := <-respChan:
+			// 发送响应给客户端
+			if err := stream.Send(&proto.TextToSpeechResponse{
+				AudioData:  resp.Audio,
+				SampleRate: resp.Sample,
+				Format:     resp.Format,
+				IsEnd:      resp.IsEnd,
+			}); err != nil {
+				logger.CtxError(stream.Context(), "failed to send response: %v", err)
+				return err
+			}
+
+			// 如果是结束标记，返回
+			if resp.IsEnd {
+				return nil
+			}
+		case <-stream.Context().Done():
+			// 客户端断开连接
+			logger.CtxInfo(stream.Context(), "client disconnected")
+			return nil
+		}
+	}
+
+	return nil
+}
+
 func (s *Server) VoicesList(ctx context.Context, req *proto.VoicesListRequest) (*proto.VoicesListResponse, error) {
 
 	ttsProvider, ctx, err := s.getTTSProvider(ctx, req.Provider)

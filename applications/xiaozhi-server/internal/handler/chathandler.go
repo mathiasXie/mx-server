@@ -3,16 +3,20 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	tts_proto "github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
+	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
+	"github.com/mathiasXie/gin-web/utils"
+	audio_utils "github.com/mathiasXie/gin-web/utils/audio/utils"
+	"google.golang.org/grpc/metadata"
 )
 
 type ChatHandler struct {
@@ -32,9 +36,9 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 	}()
 	// client := resource.GetResource().LLMRpcClient.LLMServiceClient
 	// 创建带有元数据的上下文
-	// trace_id, _ := ctx.Value(consts.LogID).(string)
-	// md := metadata.Pairs("trace_id", trace_id)
-	// rpcCtx := metadata.NewOutgoingContext(ctx, md)
+	trace_id, _ := ctx.Value(consts.LogID).(string)
+	md := metadata.Pairs("trace_id", trace_id)
+	rpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	for {
 		// 读取客户端发送的消息
@@ -67,7 +71,7 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 			}
 		} else {
 
-			for i := 0; i < 1; i++ {
+			for i := 1; i <= 1; i++ {
 				chatResponse := dto.ChatResponse{
 					Type:      dto.ChatTypeTTS,
 					State:     dto.ChatStateSentenceStart,
@@ -85,61 +89,99 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 				}
 
 				//发送一段语音给客户端
-				// ttsResp, err := h.TTSClient.TextToSpeech(rpcCtx, &tts_proto.TextToSpeechRequest{
-				// 	Provider: tts_proto.Provider_ALIYUN,
-				// 	VoiceId:  "longxiaochun",
-				// 	Language: "zh-CN",
-				// 	Text:     fmt.Sprintf("%d. 将鸡蛋打入碗中，加入适量盐，搅拌均匀", i),
-				// })
-				// if err != nil {
-				// 	log.Println("Error writing message:", err)
-				// 	break
-				// } else {
-
-				filePath := "./tts2.opus"
-				file, err := os.Open(filePath)
+				ttsResp, err := h.TTSClient.TextToSpeechStream(rpcCtx, &tts_proto.TextToSpeechRequest{
+					Provider: tts_proto.Provider_MICROSOFT,
+					VoiceId:  "zh-CN-XiaochenNeural",
+					Language: "zh-CN",
+					Text:     fmt.Sprintf("%d. 将鸡蛋打入碗中，加入适量盐，搅拌均匀", i),
+				})
 				if err != nil {
-					fmt.Println("打开文件时出错:", err)
-					return
-				}
-				// 确保在函数结束时关闭文件
-				defer file.Close()
-				// 获取文件的信息，用于确定文件大小
-				fileInfo, err := file.Stat()
-				if err != nil {
-					fmt.Println("获取文件信息时出错:", err)
-					return
-				}
+					log.Println("Error writing message:", err)
+					break
+				} else {
+					for {
+						msg, err := ttsResp.Recv()
+						if err != nil {
+							ctx.JSON(500, gin.H{
+								"message": err.Error(),
+							})
+						}
+						if msg.IsEnd {
+							break
+						}
+						fmt.Println("server come in ")
 
-				// 创建一个与文件大小相同的字节切片
-				AudioData := make([]byte, fileInfo.Size())
-
-				// 从文件中读取内容到 data 切片
-				_, err = io.ReadFull(file, AudioData)
-				if err != nil {
-					if err == io.EOF {
-						fmt.Println("文件读取不完整，可能文件损坏")
-					} else {
-						fmt.Println("读取文件时出错:", err)
+						//将msg.AudioData 保存到tmp目录下,文件名时间戳加随机
+						filePath := "./tmp/" + time.Now().Format("20060102150405") + utils.GetRandomString(10) + ".mp3"
+						err = os.WriteFile(filePath, msg.AudioData, 0644)
+						if err != nil {
+							log.Println("Error writing message:", err)
+							break
+						}
+						opusData, _, err := audio_utils.AudioToOpusData(filePath, 16000, 1)
+						if err != nil {
+							log.Println("Error writing message:", err)
+							break
+						}
+						os.Remove(filePath)
+						sendAudioData(opusData, conn, messageType)
 					}
-					return
 				}
+
+				// filePath := "./tts2.opus"
+				// file, err := os.Open(filePath)
+				// if err != nil {
+				// 	fmt.Println("打开文件时出错:", err)
+				// 	return
+				// }
+				// // 确保在函数结束时关闭文件
+				// defer file.Close()
+				// // 获取文件的信息，用于确定文件大小
+				// fileInfo, err := file.Stat()
+				// if err != nil {
+				// 	fmt.Println("获取文件信息时出错:", err)
+				// 	return
+				// }
+
+				// // 创建一个与文件大小相同的字节切片
+				// AudioData := make([]byte, fileInfo.Size())
+
+				// // 从文件中读取内容到 data 切片
+				// _, err = io.ReadFull(file, AudioData)
+				// if err != nil {
+				// 	if err == io.EOF {
+				// 		fmt.Println("文件读取不完整，可能文件损坏")
+				// 	} else {
+				// 		fmt.Println("读取文件时出错:", err)
+				// 	}
+				// 	return
+				// }
 
 				// 向客户端发送响应消息
 				// opusDatas, err := utils.AudioToOpusData(AudioData)
 				// if err != nil {
 				// 	fmt.Println("读取文件时出错:", err)
 				// }
-				err = conn.WriteMessage(websocket.BinaryMessage, AudioData)
-				if err != nil {
-					log.Println("Error writing message:", err)
-					break
-				}
+				// err = conn.WriteMessage(websocket.BinaryMessage, AudioData)
+				// if err != nil {
+				// 	log.Println("Error writing message:", err)
+				// 	break
+				// }
 				log.Println("success")
 				//}
 			}
 		}
 
+	}
+}
+
+func sendAudioData(opusData [][]byte, conn *websocket.Conn, messageType int) {
+	for _, data := range opusData {
+		err := conn.WriteMessage(messageType, data)
+		if err != nil {
+			log.Println("Error writing message:", err)
+			break
+		}
 	}
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -49,6 +50,7 @@ func main() {
 		return
 	}
 	defer speechConfig.Close()
+	speechConfig.SetSpeechSynthesisOutputFormat(common.Webm24Khz16Bit24KbpsMonoOpus)
 
 	speechConfig.SetSpeechSynthesisVoiceName("en-US-AvaMultilingualNeural")
 
@@ -72,7 +74,8 @@ func main() {
 			break
 		}
 
-		task := speechSynthesizer.SpeakTextAsync(text)
+		// StartSpeakingTextAsync sends the result to channel when the synthesis starts.
+		task := speechSynthesizer.StartSpeakingTextAsync(text)
 		var outcome speech.SpeechSynthesisOutcome
 		select {
 		case outcome = <-task:
@@ -86,17 +89,34 @@ func main() {
 			return
 		}
 
-		if outcome.Result.Reason == common.SynthesizingAudioCompleted {
-			fmt.Printf("Speech synthesized to speaker for text [%s].\n", text)
-		} else {
-			cancellation, _ := speech.NewCancellationDetailsFromSpeechSynthesisResult(outcome.Result)
-			fmt.Printf("CANCELED: Reason=%d.\n", cancellation.Reason)
-
-			if cancellation.Reason == common.Error {
-				fmt.Printf("CANCELED: ErrorCode=%d\nCANCELED: ErrorDetails=[%s]\nCANCELED: Did you set the speech resource key and region values?\n",
-					cancellation.ErrorCode,
-					cancellation.ErrorDetails)
-			}
+		// in most case we want to streaming receive the audio to lower the latency,
+		// we can use AudioDataStream to do so.
+		stream, err := speech.NewAudioDataStreamFromSpeechSynthesisResult(outcome.Result)
+		defer stream.Close()
+		if err != nil {
+			fmt.Println("Got an error: ", err)
+			return
 		}
+
+		var all_audio []byte
+		audio_chunk := make([]byte, 2048)
+		for {
+			n, err := stream.Read(audio_chunk)
+
+			if err == io.EOF {
+				break
+			}
+
+			all_audio = append(all_audio, audio_chunk[:n]...)
+		}
+
+		// 将音频数据保存到文件
+		filePath := "output_test.wav"
+		err = os.WriteFile(filePath, all_audio, 0644)
+		if err != nil {
+			fmt.Println("Got an error: ", err)
+		}
+
+		fmt.Printf("Read [%d] bytes from audio data stream.\n", len(all_audio))
 	}
 }

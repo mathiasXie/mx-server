@@ -9,7 +9,16 @@ type TTSProvider interface {
 	// TextToSpeech 将文本转换为语音
 	TextToSpeech(ctx context.Context, text string, language string, voiceID string, speed float32, pitch float32) ([]byte, string, int32, int32, error)
 
+	TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error
+
 	VoicesList(ctx context.Context) ([]Voices, error)
+}
+
+type TTSStreamResponse struct {
+	Audio  []byte
+	Format string
+	IsEnd  bool
+	Sample int32
 }
 
 type Voices struct {
