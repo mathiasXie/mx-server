@@ -13,6 +13,7 @@ func GetResource() *DalResource {
 	ttsRpcClient := InitTTSRPC(&config.Instance.Resource.TTSRPC)
 	functionRpcClient := InitFunctionRPC(&config.Instance.Resource.FunctionRPC)
 	llmRpcClient := InitLLMRPC(&config.Instance.Resource.LLMRPC)
+	asrRpcClient := InitASRRPC(&config.Instance.Resource.ASRRPC)
 	return &DalResource{
 		RedisClient:       redisClient,
 		WriteDB:           write,
@@ -20,6 +21,7 @@ func GetResource() *DalResource {
 		TTSRpcClient:      ttsRpcClient,
 		FunctionRpcClient: functionRpcClient,
 		LLMRpcClient:      llmRpcClient,
+		ASRRpcClient:      asrRpcClient,
 	}
 }
 
@@ -29,5 +31,6 @@ type DalResource struct {
 	ReadDB            *gorm.DB
 	TTSRpcClient      TTSRpcClient
 	FunctionRpcClient FunctionRpcClient
-	LLMRpcClient      LLMRPCConfig
+	LLMRpcClient      LLMRpcClient
+	ASRRpcClient      ASRRpcClient
 }

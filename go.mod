@@ -13,12 +13,11 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/hajimehoshi/go-mp3 v0.3.4
+	github.com/hraban/opus v0.0.0-20230925203106-0188a62cb302
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/mathiasXie/curd v0.0.0-20240813054851-25fac541aab0
 	github.com/mojocn/base64Captcha v1.3.6
 	github.com/openai/openai-go v0.1.0-alpha.62
-	github.com/pion/opus v0.0.0-20250407031944-f627aed4ab0c
 	github.com/piupuer/go-helper v1.1.1
 	github.com/prometheus/client_golang v1.21.1
 	github.com/redis/go-redis/v9 v9.7.0
@@ -51,7 +50,6 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang-module/carbon/v2 v2.1.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/hraban/opus v0.0.0-20230925203106-0188a62cb302 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect

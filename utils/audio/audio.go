@@ -12,8 +12,10 @@ import (
 
 const FRAME_DURATION_MS = 60
 
+type AudioByte []byte
+
 // ConvertMp3ToOpusBytes 将MP3数据转换为OPUS格式
-func AudioToOpusData(mp3Path string, sampleRate int, channels int) ([][]byte, float64, error) {
+func AudioToOpusData(mp3Path string, sampleRate int, channels int) ([]AudioByte, float64, error) {
 	// 从音频文件获取PCM数据
 	pcmData, err := extractPcmFromAudio(mp3Path)
 	if err != nil {
@@ -38,7 +40,7 @@ func AudioToOpusData(mp3Path string, sampleRate int, channels int) ([][]byte, fl
 // sampleRate: 采样率（如16000）
 // channels: 声道数（1为单声道，2为立体声）
 // frameDurationMs: 帧长度（毫秒，如20、40、60等）
-func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDurationMs int) ([][]byte, error) {
+func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDurationMs int) ([]AudioByte, error) {
 	// 创建Opus编码器
 	opusEncoder, err := opus.NewEncoder(sampleRate, channels, 2048) // OPUS_APPLICATION_VOIP = 2048
 	if err != nil {
@@ -62,7 +64,7 @@ func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDuratio
 	}
 
 	// 分帧处理
-	var opusFrames [][]byte
+	var opusFrames []AudioByte
 	for i := 0; i < len(floatData); i += frameSize {
 		end := i + frameSize
 		if end > len(floatData) {

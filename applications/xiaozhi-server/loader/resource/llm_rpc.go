@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type LLMRPCConfig struct {
+type LLMRpcClient struct {
 	proto.LLMServiceClient
 	Conn *grpc.ClientConn
 }
@@ -17,21 +17,17 @@ type LLMRPCConfig struct {
 // InitLLMRPC 初始化LLM RPC客户端 连接到llm-rpc服务 实例化proto.LLMServiceClient
 // 返回proto.LLMServiceClient
 // 如果llmRpcConfig.Host为空，则返回nil
-func InitLLMRPC(llmRpcConfig *config.LLMRPCConfig) LLMRPCConfig {
-	if llmRpcConfig.Host == "" {
-		return LLMRPCConfig{}
+func InitLLMRPC(rpcConfig *config.RPCConfig) LLMRpcClient {
+	if rpcConfig.Host == "" {
+		return LLMRpcClient{}
 	}
 	// 连接服务端
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", llmRpcConfig.Host, llmRpcConfig.Port), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", rpcConfig.Host, rpcConfig.Port), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	client := proto.NewLLMServiceClient(conn)
-	// // 创建带有元数据的上下文
-	// trace_id, _ := ctx.Value(consts.LogID).(string)
-	// md := metadata.Pairs("trace_id", trace_id)
-	// rpcCtx := metadata.NewOutgoingContext(ctx, md)
-	return LLMRPCConfig{
+	return LLMRpcClient{
 		LLMServiceClient: client,
 		Conn:             conn,
 	}

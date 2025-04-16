@@ -16,6 +16,9 @@ resource:
     port: 6379
     password:
     db: 0
+  asr_rpc:
+    host: localhost
+    port: 50050  
   tts_rpc:
     host: localhost
     port: 50051

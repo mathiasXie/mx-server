@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 
@@ -161,4 +162,39 @@ func GetRandomString(length int) string {
 		b[i] = charset[r.Intn(len(charset))]
 	}
 	return string(b)
+}
+
+// RemovePunctuationAndLength 移除文本中的标点符号和空格，并根据条件返回长度和处理后的文本
+func RemovePunctuationAndLength(text string) (int, string) {
+	// 定义全角和半角标点符号以及空格
+	fullWidthPunctuations := "！＂＃＄％＆＇（）＊＋，－。／：；＜＝＞？＠［＼］＾＿｀｛｜｝～"
+	halfWidthPunctuations := `!"#$%&'()*+,-./:;<=>?@[\]^_` + "`" + `{|}~`
+	space := " "
+	fullWidthSpace := "　"
+
+	// 用于存储处理后的文本
+	var result []rune
+
+	// 遍历输入文本中的每个字符
+	for _, char := range text {
+		charStr := string(char)
+		if !strings.Contains(fullWidthPunctuations, charStr) &&
+			!strings.Contains(halfWidthPunctuations, charStr) &&
+			!strings.Contains(space, charStr) &&
+			!strings.Contains(fullWidthSpace, charStr) &&
+			!unicode.IsPunct(char) {
+			result = append(result, char)
+		}
+	}
+
+	// 将结果转换为字符串
+	resultStr := string(result)
+
+	// 如果结果为 "Yeah"，返回 0 和空字符串
+	if resultStr == "Yeah" {
+		return 0, ""
+	}
+
+	// 返回处理后文本的长度和文本本身
+	return len(resultStr), resultStr
 }

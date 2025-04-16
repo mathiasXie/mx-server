@@ -1,0 +1,18 @@
+app_name: asr-rpc
+server:
+  port: 50050
+log:
+  file_directory: "logs"
+  maxsize: 10
+  max_backups: 7
+  max_age: 30
+  compress: false
+  level: 1
+  log_id_show_header: true
+asr:
+  vosk:
+    model: "vosk-model-small-cn-0.4"
+  aliyun:
+    api_key: "sk-69734b46cb6a4a24a0f29ab84f7451ae"
+
+

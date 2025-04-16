@@ -4,7 +4,7 @@ import (
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mathiasXie/gin-web/applications/gin-web/dto"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"github.com/mathiasXie/gin-web/pkg/metrics"
 )

@@ -61,10 +61,6 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 		}
 	})
 
-	chatHandler := handler.ChatHandler{
-		LLMClient: resource.GetResource().LLMRpcClient.LLMServiceClient,
-		TTSClient: resource.GetResource().TTSRpcClient.TTSServiceClient,
-	}
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -73,7 +69,15 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 			return true
 		},
 	}
+
+	llmClient := resource.GetResource().LLMRpcClient.LLMServiceClient
+	ttsClient := resource.GetResource().TTSRpcClient.TTSServiceClient
 	r.GET("/xiaozhi/v1/", func(ctx *gin.Context) {
+		// 创建带有元数据的上下文
+		chatHandler := handler.ChatHandler{
+			LLMClient: &llmClient,
+			TTSClient: &ttsClient,
+		}
 		chatHandler.Chat(ctx, upgrader)
 	})
 	return r

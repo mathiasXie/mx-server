@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/mathiasXie/gin-web/applications/gin-web/loader/resource"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader/resource"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )

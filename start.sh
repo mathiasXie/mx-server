@@ -18,15 +18,24 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # 设置环境变量
-export SPEECHSDK_ROOT="$HOME/speechsdk"
+
+#微软Azure tts使用环境变量
+export SPEECHSDK_ROOT="$HOME/speechsdk" 
 export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
 export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
 export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
 
-# 确保系统库路径在LD_LIBRARY_PATH中
 export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
 
+# export VOSK_PATH="./applications/asr-rpc/vosk_lib/"
+
+# export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
+
+# 确保系统库路径在LD_LIBRARY_PATH中
+
 # 启动所有服务
+go run applications/asr-rpc/main.go -f applications/asr-rpc/conf &
+PIDS+=($!)
 go run applications/tts-rpc/main.go -f applications/tts-rpc/conf &
 PIDS+=($!)
 go run applications/function-rpc/main.go -f applications/function-rpc/conf &

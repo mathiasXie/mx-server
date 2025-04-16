@@ -11,6 +11,7 @@ type Config struct {
 	TTS               TTSConfig      `yaml:"tts" json:"tts"`
 	FunctionRPC       FunctionConfig `yaml:"function_rpc" json:"function_rpc"`
 	LLM               LLMConfig      `yaml:"llm" json:"llm"`
+	ASR               ASRConfig      `yaml:"asr" json:"asr"`
 }
 
 // Instance 全局配置实例

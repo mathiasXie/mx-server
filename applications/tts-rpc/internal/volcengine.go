@@ -94,8 +94,61 @@ func (d *VolcEngineTTS) TextToSpeech(ctx context.Context, text string, language 
 	return audio, "mp3", 16000, 1, nil
 }
 
-func (m *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+	input := setupInput(text, voiceID, optSubmit, d.config.APIID)
+	input = gzipCompress(input)
+	payloadSize := len(input)
+	payloadArr := make([]byte, 4)
+	binary.BigEndian.PutUint32(payloadArr, uint32(payloadSize))
+	clientRequest := make([]byte, len(defaultHeader))
+	copy(clientRequest, defaultHeader)
+	clientRequest = append(clientRequest, payloadArr...)
+	clientRequest = append(clientRequest, input...)
 
+	var header = http.Header{"Authorization": []string{fmt.Sprintf("Bearer;%s", d.config.Token)}}
+
+	c, _, err := websocket.DefaultDialer.Dial(d.config.Endpoint, header)
+	if err != nil {
+		fmt.Println("dial err:", err)
+		return fmt.Errorf("failed to send request: %v", err)
+	}
+	defer c.Close()
+	err = c.WriteMessage(websocket.BinaryMessage, clientRequest)
+	if err != nil {
+		fmt.Println("write message fail, err:", err.Error())
+		return fmt.Errorf("failed to send request: %v", err)
+	}
+	for {
+		var message []byte
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			fmt.Println("read message fail, err:", err.Error())
+			break
+		}
+		resp, err := parseResponse(message)
+		if err != nil {
+			fmt.Println("parse response fail, err:", err.Error())
+			break
+		}
+		if resp.IsLast {
+			respChan <- TTSStreamResponse{
+				IsEnd: true,
+			}
+			break
+		}
+		if len(resp.Audio) > 0 {
+			// 发送响应
+			respChan <- TTSStreamResponse{
+				Audio:  resp.Audio,
+				Sample: 16000,
+				Format: "mp3",
+			}
+		}
+	}
+	if err != nil {
+		fmt.Println("stream synthesis fail, err:", err.Error())
+		return fmt.Errorf("failed to send request: %v", err)
+	}
 	return nil
 }
 

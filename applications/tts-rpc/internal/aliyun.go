@@ -89,10 +89,12 @@ func (m *AliyunTTS) TextToSpeech(ctx context.Context, text string, language stri
 				logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]解析事件失败：%v", err)
 				continue
 			}
+
 			if event.Header.Event == "task-finished" {
 				logger.CtxInfo(ctx, "[AliyunTTS][TextToSpeech]任务完成")
-
 				break
+			} else if event.Header.Event == "task-started" {
+				logger.CtxInfo(ctx, "[AliyunTTS]TextToSpeech任务开始,报文：", text)
 			}
 		}
 	}
@@ -101,6 +103,81 @@ func (m *AliyunTTS) TextToSpeech(ctx context.Context, text string, language stri
 
 func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
 
+	// 连接WebSocket服务
+	conn, err := connectWebSocket(m.config.APIKey)
+	if err != nil {
+		fmt.Println("连接WebSocket失败：", err)
+		logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]连接WebSocket失败：%v", err)
+		return err
+	}
+	defer closeConnection(conn)
+
+	// 发送run-task指令
+	taskID, err := sendRunTaskCmd(conn, voiceID)
+	if err != nil {
+		fmt.Println("发送run-task指令失败：", err)
+		logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]发送run-task指令失败：%v", err)
+		return err
+	}
+
+	// 发送待合成文本
+	if err := sendContinueTaskCmd(conn, taskID, text); err != nil {
+		fmt.Println("发送待合成文本失败：", err)
+		logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]发送待合成文本失败：%v", err)
+		return err
+	}
+
+	// 发送finish-task指令
+	if err := sendFinishTaskCmd(conn, taskID); err != nil {
+		fmt.Println("发送finish-task指令失败：", err)
+		logger.CtxError(ctx, "发送finish-task指令失败：%v", err)
+		return err
+	}
+
+	// 死循环等待响应
+	var audio []byte
+	var audio_length int
+	output_length := 10240
+	for {
+		msgType, message, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("解析服务器消息失败：", err)
+			logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]解析服务器消息失败：%v", err)
+			return err
+		}
+
+		if msgType == websocket.BinaryMessage {
+			audio = append(audio, message...)
+			if audio_length+len(message) > output_length {
+				respChan <- TTSStreamResponse{
+					Audio:  audio,
+					Sample: 16000,
+					Format: format,
+				}
+				audio = audio[audio_length:]
+				audio_length = 0
+			} else {
+				audio_length += len(message)
+			}
+		} else {
+			// 处理文本消息
+			var event Event
+			err = json.Unmarshal(message, &event)
+			if err != nil {
+				fmt.Println("解析事件失败：", err)
+				logger.CtxError(ctx, "[AliyunTTS][TextToSpeech]解析事件失败：%v", err)
+				continue
+			}
+			if event.Header.Event == "task-finished" {
+				respChan <- TTSStreamResponse{
+					IsEnd: true,
+				}
+				logger.CtxInfo(ctx, "[AliyunTTS][TextToSpeech]任务完成")
+
+				break
+			}
+		}
+	}
 	return nil
 }
 

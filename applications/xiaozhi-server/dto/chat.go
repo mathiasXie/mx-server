@@ -9,10 +9,11 @@ type ChatType string
 type ChatState string
 
 const (
-	ChatTypeTTS   ChatType = "tts"
-	ChatTypeLLM   ChatType = "llm"
-	ChatTypeSTT   ChatType = "stt"
-	ChatTypeHello ChatType = "hello"
+	ChatTypeTTS    ChatType = "tts"
+	ChatTypeLLM    ChatType = "llm"
+	ChatTypeSTT    ChatType = "stt"
+	ChatTypeHello  ChatType = "hello"
+	ChatTypeListen ChatType = "listen"
 )
 
 const (
@@ -20,6 +21,8 @@ const (
 	ChatStateSentenceStart ChatState = "sentence_start"
 	ChatStateSentenceEnd   ChatState = "sentence_end"
 	ChatStateStop          ChatState = "stop"
+	ChatStateAuto          ChatState = "auto"
+	ChatStateDetect        ChatState = "detect"
 )
 
 type ChatResponse struct {
@@ -32,9 +35,11 @@ type ChatResponse struct {
 
 // {"type":"hello","device_id":"web_test_device","device_name":"Web测试设备","device_mac":"00:11:22:33:44:55","token":"your-token1"}
 type ChatRequest struct {
-	Type       ChatType `json:"type"`
-	DeviceID   string   `json:"device_id"`
-	DeviceName string   `json:"device_name"`
-	DeviceMac  string   `json:"device_mac"`
-	Token      string   `json:"token"`
+	Type       ChatType  `json:"type"`
+	DeviceID   string    `json:"device_id"`
+	DeviceName string    `json:"device_name"`
+	DeviceMac  string    `json:"device_mac"`
+	Token      string    `json:"token"`
+	Mode       string    `json:"mode"`
+	State      ChatState `json:"state"`
 }

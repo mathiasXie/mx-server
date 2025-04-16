@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mathiasXie/gin-web/applications/gin-web/dto"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
 	"github.com/mathiasXie/gin-web/utils"
 )
 
