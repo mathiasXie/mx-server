@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -26,7 +28,7 @@ type AliyunTTS struct {
 func NewAliyunTTS(config Config) (TTSProvider, error) {
 
 	if config.APIKey == "" {
-		return nil, fmt.Errorf("microsoft tts requires an API key")
+		return nil, fmt.Errorf("aliyun tts requires an API key")
 	}
 	return &AliyunTTS{
 		config: config,
@@ -68,7 +70,7 @@ func (m *AliyunTTS) TextToSpeech(ctx context.Context, text string, language stri
 		return nil, "", 0, 0, err
 	}
 
-	// 死循环等待响应
+	// 循环等待响应
 	var audio []byte
 	for {
 		msgType, message, err := conn.ReadMessage()
@@ -102,7 +104,7 @@ func (m *AliyunTTS) TextToSpeech(ctx context.Context, text string, language stri
 }
 
 func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
-
+	start := time.Now()
 	// 连接WebSocket服务
 	conn, err := connectWebSocket(m.config.APIKey)
 	if err != nil {
@@ -134,10 +136,9 @@ func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, languag
 		return err
 	}
 
-	// 死循环等待响应
+	// 循环等待响应
 	var audio []byte
-	var audio_length int
-	output_length := 10240
+	buferLenght := 10240
 	for {
 		msgType, message, err := conn.ReadMessage()
 		if err != nil {
@@ -148,16 +149,14 @@ func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, languag
 
 		if msgType == websocket.BinaryMessage {
 			audio = append(audio, message...)
-			if audio_length+len(message) > output_length {
+			for len(audio) >= buferLenght {
+				sendAudio := audio[:buferLenght]
 				respChan <- TTSStreamResponse{
-					Audio:  audio,
+					Audio:  sendAudio,
 					Sample: 16000,
 					Format: format,
 				}
-				audio = audio[audio_length:]
-				audio_length = 0
-			} else {
-				audio_length += len(message)
+				audio = audio[buferLenght:]
 			}
 		} else {
 			// 处理文本消息
@@ -169,11 +168,18 @@ func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, languag
 				continue
 			}
 			if event.Header.Event == "task-finished" {
+				// 处理剩余不足 10240 字节的数据
+				if len(audio) > 0 {
+					respChan <- TTSStreamResponse{
+						Audio:  audio,
+						Sample: 16000,
+						Format: format,
+					}
+				}
 				respChan <- TTSStreamResponse{
 					IsEnd: true,
 				}
-				logger.CtxInfo(ctx, "[AliyunTTS][TextToSpeech]任务完成")
-
+				logger.CtxInfo(ctx, "[AliyunTTS][TextToSpeech]TextToSpeechStream输出结束:", text, ",耗时：", time.Since(start).Milliseconds())
 				break
 			}
 		}
@@ -259,6 +265,7 @@ func sendRunTaskCmd(conn *websocket.Conn, voiceID string) (string, error) {
 
 // 生成run-task指令
 func generateRunTaskCmd(voiceID string) (string, string, error) {
+	log.Printf("\033[1;31m生成run-task指令: %s\033[0m\n", voiceID)
 	taskID := uuid.New().String()
 	runTaskCmd := Event{
 		Header: Header{
@@ -275,7 +282,7 @@ func generateRunTaskCmd(voiceID string) (string, string, error) {
 				TextType:   "PlainText",
 				Voice:      voiceID,
 				Format:     format,
-				SampleRate: 22050,
+				SampleRate: 16000,
 				Volume:     50,
 				Rate:       1,
 				Pitch:      1,

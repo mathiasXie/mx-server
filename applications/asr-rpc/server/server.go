@@ -44,6 +44,8 @@ func (s *Server) getASRProvider(ctx context.Context, provider proto.Provider) (a
 	switch provider {
 	case proto.Provider_VOSK:
 		asrProvider, err = asr.NewVoskASR(asrConfig)
+	case proto.Provider_ALIYUN:
+		asrProvider, err = asr.NewAliyunASR(asrConfig)
 	}
 	if err != nil {
 		return nil, ctx, fmt.Errorf("failed to create asr provider: %v", err)
@@ -68,7 +70,6 @@ func (s *Server) SpeechToText(ctx context.Context, req *proto.SpeechToTextReques
 		logger.CtxError(ctx, "failed to get asr provider: %v", err)
 		return nil, fmt.Errorf("failed to get asr provider: %v", err)
 	}
-
 	text, err := asrProvider.SpeechToText(
 		ctx,
 		req.AudioData,
@@ -77,7 +78,6 @@ func (s *Server) SpeechToText(ctx context.Context, req *proto.SpeechToTextReques
 		logger.CtxError(ctx, "failed to convert text to speech: %v", err)
 		return nil, fmt.Errorf("failed to convert text to speech: %v", err)
 	}
-	logger.CtxInfo(ctx, "req: %v", req)
 	return &proto.SpeechToTextResponse{
 		Text: text,
 	}, nil

@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/mathiasXie/gin-web/pkg/logger"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -95,6 +97,8 @@ func (d *VolcEngineTTS) TextToSpeech(ctx context.Context, text string, language 
 }
 
 func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+	start := time.Now()
+
 	input := setupInput(text, voiceID, optSubmit, d.config.APIID)
 	input = gzipCompress(input)
 	payloadSize := len(input)
@@ -118,6 +122,8 @@ func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, lan
 		fmt.Println("write message fail, err:", err.Error())
 		return fmt.Errorf("failed to send request: %v", err)
 	}
+	var audio []byte
+	buferLenght := 10240
 	for {
 		var message []byte
 		_, message, err := c.ReadMessage()
@@ -131,20 +137,36 @@ func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, lan
 			break
 		}
 		if resp.IsLast {
+			// 处理剩余不足 10240 字节的数据
+			if len(audio) > 0 {
+				respChan <- TTSStreamResponse{
+					Audio:  audio,
+					Sample: 16000,
+					Format: format,
+				}
+			}
 			respChan <- TTSStreamResponse{
 				IsEnd: true,
 			}
+			logger.CtxInfo(ctx, "[VolcEngineTTS][TextToSpeech]TextToSpeechStream输出结束:", text, ",耗时：", time.Since(start).Milliseconds())
+
 			break
 		}
 		if len(resp.Audio) > 0 {
 			// 发送响应
-			respChan <- TTSStreamResponse{
-				Audio:  resp.Audio,
-				Sample: 16000,
-				Format: "mp3",
+			audio = append(audio, resp.Audio...)
+			for len(audio) >= buferLenght {
+				sendAudio := audio[:buferLenght]
+				respChan <- TTSStreamResponse{
+					Audio:  sendAudio,
+					Sample: 16000,
+					Format: format,
+				}
+				audio = audio[buferLenght:]
 			}
 		}
 	}
+
 	if err != nil {
 		fmt.Println("stream synthesis fail, err:", err.Error())
 		return fmt.Errorf("failed to send request: %v", err)
@@ -171,7 +193,8 @@ func setupInput(text, voiceType, opt, appid string) []byte {
 	params["user"]["uid"] = "uid"
 	params["audio"] = make(map[string]interface{})
 	params["audio"]["voice_type"] = voiceType
-	params["audio"]["encoding"] = "opus"
+	params["audio"]["encoding"] = "mp3"
+	params["audio"]["rate"] = 16000
 	params["audio"]["speed_ratio"] = 1.0
 	params["audio"]["volume_ratio"] = 1.0
 	params["audio"]["pitch_ratio"] = 1.0

@@ -33,6 +33,7 @@ require (
 )
 
 require (
+	github.com/alphacep/vosk-api/go v0.3.50 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect

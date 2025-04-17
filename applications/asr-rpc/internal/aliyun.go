@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -15,7 +16,6 @@ import (
 // AliyunASR 实现ASR服务
 type AliyunASR struct {
 	config Config
-	client *http.Client
 }
 
 // NewVoskASR
@@ -26,7 +26,6 @@ func NewAliyunASR(config Config) (ASRProvider, error) {
 	}
 	return &AliyunASR{
 		config: config,
-		client: &http.Client{},
 	}, nil
 }
 
@@ -38,7 +37,7 @@ const (
 
 // SpeechToText 实现ASRProvider接口
 func (m *AliyunASR) SpeechToText(ctx context.Context, audioData []byte) (string, error) {
-
+	startTime := time.Now()
 	// 连接WebSocket服务
 	conn, err := connectWebSocket(m.config.APIKey)
 	if err != nil {
@@ -53,7 +52,7 @@ func (m *AliyunASR) SpeechToText(ctx context.Context, audioData []byte) (string,
 	}
 
 	// 发送待识别音频文件流
-	if err := sendAudioData(conn, audioData); err != nil {
+	if err := sendAudioData(ctx, conn, audioData); err != nil {
 		log.Fatal("发送音频失败：", err)
 	}
 
@@ -67,13 +66,13 @@ func (m *AliyunASR) SpeechToText(ctx context.Context, audioData []byte) (string,
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("解析服务器消息失败：", err)
+			logger.CtxError(ctx, "[AliyunASR]解析服务器消息失败：", err)
 			return "", err
 		}
 		var event Event
 		err = json.Unmarshal(message, &event)
 		if err != nil {
-			log.Println("解析事件失败：", err)
+			logger.CtxError(ctx, "[AliyunASR]解析事件失败：", err)
 			continue
 		}
 		if event.Header.Event == "result-generated" {
@@ -82,9 +81,14 @@ func (m *AliyunASR) SpeechToText(ctx context.Context, audioData []byte) (string,
 			}
 		} else if event.Header.Event == "task-started" {
 			logger.CtxInfo(ctx, "[AliyunASR]SpeechToText任务开始")
-		} else if event.Header.Event == "task-finished" || event.Header.Event == "task-failed" {
-			logger.CtxInfo(ctx, "[AliyunASR]SpeechToText任务结束,结果：", text)
-
+		} else if event.Header.Event == "task-finished" {
+			logger.CtxInfo(ctx, "[AliyunASR]SpeechToText任务结束,结果：", text, ";耗时：", time.Since(startTime))
+			break
+		} else if event.Header.Event == "task-failed" {
+			logger.CtxError(ctx, "[AliyunASR]SpeechToText任务失败 ", "message:", string(message))
+			break
+		} else {
+			logger.CtxInfo(ctx, "[AliyunASR]SpeechToText意外事件：", event.Header.Event, "message:", string(message))
 			break
 		}
 	}
@@ -185,7 +189,7 @@ func generateRunTaskCmd() (string, string, error) {
 			Function:  "recognition",
 			Model:     "paraformer-realtime-v2",
 			Parameters: Params{
-				Format:     "pcm",
+				Format:     "mp3",
 				SampleRate: 16000,
 			},
 			Input: Input{},
@@ -196,11 +200,21 @@ func generateRunTaskCmd() (string, string, error) {
 }
 
 // 发送音频数据
-func sendAudioData(conn *websocket.Conn, audioData []byte) error {
+func sendAudioData(ctx context.Context, conn *websocket.Conn, audioData []byte) error {
+	logger.CtxInfo(ctx, "[AliyunASR]发送音频数据,长度:", len(audioData))
 
-	err := conn.WriteMessage(websocket.BinaryMessage, audioData)
-	if err != nil {
-		return err
+	length := 1024
+	for {
+		if len(audioData) < length {
+			break
+		}
+		length = min(len(audioData), length)
+		err := conn.WriteMessage(websocket.BinaryMessage, audioData[:length])
+		if err != nil {
+			return err
+		}
+		audioData = audioData[length+1:]
+		time.Sleep(100 * time.Millisecond)
 	}
 	return nil
 }

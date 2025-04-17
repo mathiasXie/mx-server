@@ -1,25 +1,46 @@
 package audio
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"os/exec"
+	"strconv"
+	"time"
 
 	"github.com/hraban/opus"
+	"github.com/mathiasXie/gin-web/pkg/logger"
 )
 
 const FRAME_DURATION_MS = 60
 
 type AudioByte []byte
 
-// ConvertMp3ToOpusBytes 将MP3数据转换为OPUS格式
-func AudioToOpusData(mp3Path string, sampleRate int, channels int) ([]AudioByte, float64, error) {
-	// 从音频文件获取PCM数据
-	pcmData, err := extractPcmFromAudio(mp3Path)
+// 将MP3数据转换为OPUS格式
+// mp3Audio: MP3音频数据
+// sampleRate: 采样率（如16000）
+// channels: 声道数（1为单声道，2为立体声）
+// 返回值: 转换后的Opus数据, 音频时长, 错误信息
+func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, channels int) ([]AudioByte, float64, error) {
+
+	tempMapAudioFile, err := os.CreateTemp("", "to_tts_*.mp3")
 	if err != nil {
-		fmt.Println("无法从文件提取PCM数据: ", mp3Path)
+		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData无法创建临时音频文件: ", err)
+		return nil, 0, err
+	}
+	err = os.WriteFile(tempMapAudioFile.Name(), mp3Audio, 0644)
+	if err != nil {
+		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData写入临时音频文件失败:", err)
+		return nil, 0, err
+	}
+	defer os.Remove(tempMapAudioFile.Name())
+	// 从音频文件获取PCM数据
+	pcmData, err := extractPcmFromAudio(tempMapAudioFile.Name())
+	if err != nil {
+		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData无法从文件提取PCM数据: ", err)
 		return nil, 0, err
 	}
 
@@ -28,7 +49,7 @@ func AudioToOpusData(mp3Path string, sampleRate int, channels int) ([]AudioByte,
 	// 转换为Opus格式
 	opusFrames, err := convertPcmToOpus(pcmData, sampleRate, channels, FRAME_DURATION_MS)
 	if err != nil {
-		fmt.Println("转换PCM为Opus失败: ", err)
+		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData转换PCM为Opus失败: ", err)
 		return nil, 0, err
 	}
 
@@ -97,7 +118,7 @@ func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDuratio
 // opusData: Opus编码的音频数据
 // sampleRate: 采样率（如16000）
 // channels: 声道数（1为单声道，2为立体声）
-func convertOpusToPcm(opusData []byte, sampleRate int, channels int) ([]byte, error) {
+func ConvertOpusToPcm(opusData []byte, sampleRate int, channels int) ([]byte, error) {
 	// 创建Opus解码器
 	opusDecoder, err := opus.NewDecoder(sampleRate, channels)
 	if err != nil {
@@ -166,8 +187,8 @@ func extractPcmFromAudio(mp3Path string) ([]byte, error) {
 
 	//执行FFmpeg命令
 	cmd := exec.Command(command[0], command[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 	err = cmd.Run()
 	if err != nil {
 		fmt.Println("FFmpeg提取PCM数据失败: ", err)
@@ -181,4 +202,40 @@ func extractPcmFromAudio(mp3Path string) ([]byte, error) {
 		return nil, err
 	}
 	return pcmData, nil
+}
+
+func CreateAudioDataFromPcm(ctx context.Context, pcmData []byte, format string, sampleRate int, channels int) ([]byte, error) {
+
+	// 将pcm数据写入文件
+	tempAudioFile, err := os.Create(fmt.Sprintf("./tmp/to_asr_%s.pcm", time.Now().Format("20060102150405")))
+	if err != nil {
+		logger.CtxError(ctx, "无法创建临时音频文件: ", err)
+		return nil, err
+	}
+	defer os.Remove(tempAudioFile.Name())
+	_, _ = tempAudioFile.Write(pcmData)
+	tempAudioFile.Close()
+
+	generrateAudioFile := fmt.Sprintf("./tmp/to_asr_%s.%s", time.Now().Format("20060102150405"), format)
+	defer os.Remove(generrateAudioFile)
+	//使用ffmpeg将pcm数据转换为指定格式
+	command := []string{"ffmpeg", "-f", "s16le", "-ar", strconv.Itoa(sampleRate), "-ac", strconv.Itoa(channels), "-i", tempAudioFile.Name(), generrateAudioFile}
+
+	//执行FFmpeg命令
+	cmd := exec.Command(command[0], command[1:]...)
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	err = cmd.Run()
+	if err != nil {
+		logger.CtxError(ctx, "FFmpeg提取PCM数据失败: ", err)
+		return nil, err
+	}
+
+	//读取转换后的音频文件
+	audioData, err := os.ReadFile(generrateAudioFile)
+	if err != nil {
+		logger.CtxError(ctx, "读取转换后的音频文件失败: ", err)
+		return nil, err
+	}
+	return audioData, nil
 }

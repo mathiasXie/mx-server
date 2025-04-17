@@ -42,4 +42,6 @@ type ChatRequest struct {
 	Token      string    `json:"token"`
 	Mode       string    `json:"mode"`
 	State      ChatState `json:"state"`
+	Text       string    `json:"text"`
+	SessionID  string    `json:"session_id"`
 }

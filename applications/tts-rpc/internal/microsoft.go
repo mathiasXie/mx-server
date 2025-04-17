@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -92,6 +91,7 @@ func (m *MicrosoftTTS) TextToSpeech(ctx context.Context, text string, language s
 }
 
 func (m *MicrosoftTTS) TextToSpeechStream(ctx context.Context, text string, language string, voiceID string, respChan chan<- TTSStreamResponse) error {
+	start := time.Now()
 	region := "southeastasia"
 	config, err := speech.NewSpeechConfigFromSubscription(m.config.APIKey, region)
 	if err != nil {
@@ -148,16 +148,10 @@ func (m *MicrosoftTTS) TextToSpeechStream(ctx context.Context, text string, lang
 				respChan <- TTSStreamResponse{
 					IsEnd: true,
 				}
-				fmt.Println("=====\n break of for range\n======")
+				logger.CtxInfo(ctx, "[MicrosoftTTS]TextToSpeechStream输出结束:", text, ",耗时：", time.Since(start).Milliseconds())
 				break
 			}
-			fmt.Println("rpc come in ")
-			// 将音频数据保存到文件
-			filePath := fmt.Sprintf("logs/output_test_%d.mp3", i)
-			err = os.WriteFile(filePath, audio_chunk[:n], 0644)
-			if err != nil {
-				fmt.Println("Got an error: ", err)
-			}
+
 			// 发送响应
 			respChan <- TTSStreamResponse{
 				Audio:  audio_chunk[:n],
@@ -168,7 +162,7 @@ func (m *MicrosoftTTS) TextToSpeechStream(ctx context.Context, text string, lang
 			i++
 		}
 
-		fmt.Printf("Read [%d] bytes from audio data stream.\n", len(all_audio))
+		//fmt.Printf("Read [%d] bytes from audio data stream.\n", len(all_audio))
 	}
 	return nil
 }

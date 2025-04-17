@@ -11,7 +11,7 @@ log:
   log_id_show_header: true
 asr:
   vosk:
-    model: "vosk-model-small-cn-0.4"
+    model: "vosk-model-cn-0.22"
   aliyun:
     api_key: "sk-69734b46cb6a4a24a0f29ab84f7451ae"
 
