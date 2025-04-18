@@ -4,6 +4,10 @@ import (
 	"context"
 	"sync"
 
+	asr_proto "github.com/mathiasXie/gin-web/applications/asr-rpc/proto/pb/proto"
+	function_proto "github.com/mathiasXie/gin-web/applications/function-rpc/proto/pb/proto"
+	llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
+	tts_proto "github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader/resource"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -38,4 +42,32 @@ func GetRedis() *redis.Client {
 		panic("resource not init")
 	}
 	return clients.RedisClient
+}
+
+func GetTTSRpc() *tts_proto.TTSServiceClient {
+	if !initCompleted {
+		panic("resource not init")
+	}
+	return &clients.TTSRpcClient.TTSServiceClient
+}
+
+func GetFunctionRpc() *function_proto.FunctionServiceClient {
+	if !initCompleted {
+		panic("resource not init")
+	}
+	return &clients.FunctionRpcClient.FunctionServiceClient
+}
+
+func GetLLMRpc() *llm_proto.LLMServiceClient {
+	if !initCompleted {
+		panic("resource not init")
+	}
+	return &clients.LLMRpcClient.LLMServiceClient
+}
+
+func GetASRRpc() *asr_proto.ASRServiceClient {
+	if !initCompleted {
+		panic("resource not init")
+	}
+	return &clients.ASRRpcClient.ASRServiceClient
 }

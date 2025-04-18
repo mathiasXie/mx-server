@@ -14,42 +14,38 @@ import (
 
 type Server struct {
 	proto.UnimplementedASRServiceServer
-	asrConfigs map[proto.Provider]asr.Config
+	asrProviders map[proto.Provider]asr.ASRProvider
 }
 
 func NewServer() *Server {
 
-	asrConfigs := map[proto.Provider]asr.Config{
-		proto.Provider_VOSK: {
-			Model: config.Instance.ASR.Vosk.Model,
-		},
-		proto.Provider_ALIYUN: {
-			APIKey: config.Instance.ASR.Aliyun.ApiKey,
-		},
+	asrProviders := map[proto.Provider]asr.ASRProvider{}
+	voskProvider, err := asr.NewVoskASR(asr.Config{
+		Model: config.Instance.ASR.Vosk.Model,
+	})
+	if err != nil {
+		logger.CtxError(context.Background(), "failed to create asr provider: %v", err)
+		return nil
 	}
 
+	aliyunProvider, err := asr.NewAliyunASR(asr.Config{
+		APIKey: config.Instance.ASR.Aliyun.ApiKey,
+	})
+	if err != nil {
+		logger.CtxError(context.Background(), "failed to create asr provider: %v", err)
+		return nil
+	}
+	asrProviders[proto.Provider_VOSK] = voskProvider
+	asrProviders[proto.Provider_ALIYUN] = aliyunProvider
 	return &Server{
-		asrConfigs: asrConfigs,
+		asrProviders: asrProviders,
 	}
 }
 
 func (s *Server) getASRProvider(ctx context.Context, provider proto.Provider) (asr.ASRProvider, context.Context, error) {
-	asrConfig, ok := s.asrConfigs[provider]
-	if !ok {
-		logger.CtxError(ctx, "failed to create asr provider: %v", provider)
-		return nil, ctx, fmt.Errorf("failed to create tts provider: %v", provider)
-	}
-	var asrProvider asr.ASRProvider
-	var err error
-	switch provider {
-	case proto.Provider_VOSK:
-		asrProvider, err = asr.NewVoskASR(asrConfig)
-	case proto.Provider_ALIYUN:
-		asrProvider, err = asr.NewAliyunASR(asrConfig)
-	}
-	if err != nil {
-		return nil, ctx, fmt.Errorf("failed to create asr provider: %v", err)
-	}
+
+	asrProvider := s.asrProviders[provider]
+
 	// 从上下文中获取元数据
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {

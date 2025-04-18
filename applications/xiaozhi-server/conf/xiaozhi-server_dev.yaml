@@ -28,6 +28,10 @@ resource:
   llm_rpc:
     host: localhost
     port: 50053
+provider:
+  llm: aliyun
+  asr: vosk
+  tts: aliyun
 log:
   file_directory: "logs"
   maxsize: 10

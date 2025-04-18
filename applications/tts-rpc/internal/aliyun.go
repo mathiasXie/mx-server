@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -265,7 +264,6 @@ func sendRunTaskCmd(conn *websocket.Conn, voiceID string) (string, error) {
 
 // 生成run-task指令
 func generateRunTaskCmd(voiceID string) (string, string, error) {
-	log.Printf("\033[1;31m生成run-task指令: %s\033[0m\n", voiceID)
 	taskID := uuid.New().String()
 	runTaskCmd := Event{
 		Header: Header{

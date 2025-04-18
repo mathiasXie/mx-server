@@ -17,5 +17,5 @@ var (
 	RetRedisError       = &ErrCode{nil, "CW3002", "redis连接异常"}
 	RetAbaseError       = &ErrCode{nil, "CW3003", "abase连接异常"}
 	RetMysqlError       = &ErrCode{nil, "CW3004", "mysql连接异常"}
-	RetMysqlDupKeyError = &ErrCode{nil, "CC3005", "msyql唯一键冲突"}
+	RetMysqlDupKeyError = &ErrCode{nil, "CC3005", "mysql唯一键冲突"}
 )

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/internal/handler"
-	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader/resource"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader"
 )
 
 func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
@@ -21,15 +21,12 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 		},
 	}
 
-	llmClient := resource.GetResource().LLMRpcClient.LLMServiceClient
-	ttsClient := resource.GetResource().TTSRpcClient.TTSServiceClient
-	asrClient := resource.GetResource().ASRRpcClient.ASRServiceClient
 	r.GET("/xiaozhi/v1/", func(ctx *gin.Context) {
 		// 创建带有元数据的上下文
 		chatHandler := handler.ChatHandler{
-			LLMClient: &llmClient,
-			TTSClient: &ttsClient,
-			ASRClient: &asrClient,
+			LLMClient: loader.GetLLMRpc(),
+			TTSClient: loader.GetTTSRpc(),
+			ASRClient: loader.GetASRRpc(),
 		}
 		chatHandler.Chat(ctx, upgrader)
 	})

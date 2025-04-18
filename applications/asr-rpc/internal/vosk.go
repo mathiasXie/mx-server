@@ -40,6 +40,7 @@ func NewVoskASR(config Config) (ASRProvider, error) {
 		logger.CtxError(context.Background(), "[VoskASR]NewModel失败：", err)
 		return nil, err
 	}
+	logger.CtxInfo(context.Background(), "[VoskASR]NewModel成功：", fmt.Sprintf("%s/../models/%s", dir, config.Model))
 	return &VoskASR{
 		config: config,
 		model:  model,
@@ -48,7 +49,8 @@ func NewVoskASR(config Config) (ASRProvider, error) {
 }
 
 // SpeechToText 实现ASRProvider接口
-func (v *VoskASR) SpeechToText(ctx context.Context, audioPcmData []byte) (string, error) {
+func (v *VoskASR) SpeechToText(ctx context.Context, audioWavData []byte) (string, error) {
+	logger.CtxInfo(ctx, "[VoskASR]SpeechToText开始：", len(audioWavData))
 	startTime := time.Now()
 
 	// we can check if word is in the vocabulary
@@ -62,7 +64,7 @@ func (v *VoskASR) SpeechToText(ctx context.Context, audioPcmData []byte) (string
 	}
 	rec.SetWords(1)
 
-	if rec.AcceptWaveform(audioPcmData) != 0 {
+	if rec.AcceptWaveform(audioWavData) != 0 {
 		fmt.Println(rec.Result())
 	}
 

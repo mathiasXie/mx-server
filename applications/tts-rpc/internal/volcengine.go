@@ -77,12 +77,13 @@ func (d *VolcEngineTTS) TextToSpeech(ctx context.Context, text string, language 
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			fmt.Println("read message fail, err:", err.Error())
-			break
+			return nil, "", 0, 0, fmt.Errorf("failed to send request: %v", err)
 		}
 		resp, err := parseResponse(message)
 		if err != nil {
 			fmt.Println("parse response fail, err:", err.Error())
-			break
+			logger.CtxError(ctx, "[VolcEngineTTS][TextToSpeech]TextToSpeech解析响应失败:", err.Error())
+			return nil, "", 0, 0, fmt.Errorf("failed to send request: %v", err)
 		}
 		audio = append(audio, resp.Audio...)
 		if resp.IsLast {
@@ -134,7 +135,8 @@ func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, lan
 		resp, err := parseResponse(message)
 		if err != nil {
 			fmt.Println("parse response fail, err:", err.Error())
-			break
+			logger.CtxError(ctx, "[VolcEngineTTS][TextToSpeech]TextToSpeechStream解析响应失败:", err.Error())
+			return fmt.Errorf("failed to send request: %v", err)
 		}
 		if resp.IsLast {
 			// 处理剩余不足 10240 字节的数据

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/gorilla/websocket"
 	asr_proto "github.com/mathiasXie/gin-web/applications/asr-rpc/proto/pb/proto"
@@ -28,13 +27,13 @@ func (h *ChatHandler) handlerAudioMessage(p []byte) error {
 	}
 	//如果本段有声音，且已经停止了
 	if h.clientVoiceStop {
-		audioData, err := audio_utils.CreateAudioDataFromPcm(h.rpcCtx, h.asrAudio, "mp3", 16000, 1)
+		audioData, err := audio_utils.CreateAudioDataFromPcm(h.rpcCtx, h.asrAudio, "wav", 16000, 1)
 		if err != nil {
 			logger.CtxError(h.rpcCtx, "[ChatHandler]handlerAudioMessage音频转换失败:", err, len(p))
 			return err
 		}
 		text, err := (*h.ASRClient).SpeechToText(h.rpcCtx, &asr_proto.SpeechToTextRequest{
-			Provider:  asr_proto.Provider_ALIYUN,
+			Provider:  asr_proto.Provider_VOSK,
 			AudioData: audioData,
 		})
 		if err != nil {
@@ -63,10 +62,10 @@ func (h *ChatHandler) handlerAudioMessage(p []byte) error {
 func (h *ChatHandler) sendAudioMessage(text string) error {
 	// 发送一段语音给客户端
 	ttsResp, err := (*h.TTSClient).TextToSpeechStream(h.rpcCtx, &tts_proto.TextToSpeechRequest{
-		Provider: tts_proto.Provider_VOLCENGINE,
-		VoiceId:  "zh_female_wanwanxiaohe_moon_bigtts",
-		// Provider: tts_proto.Provider_ALIYUN,
-		// VoiceId:  "longxiaochun",
+		// Provider: tts_proto.Provider_VOLCENGINE,
+		// VoiceId:  "zh_female_wanwanxiaohe_moon_bigtts",
+		Provider: tts_proto.Provider_ALIYUN,
+		VoiceId:  "longxiaochun",
 		Language: "zh-CN",
 		Text:     text,
 	})
@@ -96,7 +95,7 @@ func (h *ChatHandler) sendAudioMessage(text string) error {
 			}
 
 			if msg.IsEnd {
-				log.Printf("\033[1;36m[ChatHandler]TTS完成一次播报\033[0m\n")
+				h.print("[ChatHandler]TTS完成一次播报", "cyan")
 				break
 			}
 		}

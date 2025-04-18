@@ -28,6 +28,7 @@ type ChatHandler struct {
 	rpcCtx          context.Context
 	conn            *websocket.Conn
 	sessionID       string
+	userInfo        *dto.UserInfo
 }
 
 func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
@@ -37,7 +38,7 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 		return
 	}
 	defer func() {
-		fmt.Println("客户端断开连接")
+		h.print("服务端关闭连接", "red")
 		conn.Close()
 	}()
 	// client := resource.GetResource().LLMRpcClient.LLMServiceClient
@@ -48,14 +49,21 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 	h.rpcCtx = rpcCtx
 	h.conn = conn
 	h.sessionID = trace_id
+	h.userInfo = &dto.UserInfo{}
+
 	for {
 		// 读取客户端发送的消息
 		messageType, p, err := conn.ReadMessage()
-		if err != nil && err.Error() != "websocket: close 1000 (normal)" {
-			log.Println("Error reading message:", err)
-			logger.CtxError(h.rpcCtx, "[ChatHandler]handlerMessage读取消息失败:", err)
+		if err != nil {
+			if err.Error() == "websocket: close 1000 (normal)" {
+				h.print("客户端断开连接", "red")
+			} else {
+				h.print(fmt.Sprintf("读取消息失败: %s", err), "red")
+				logger.CtxError(h.rpcCtx, "[ChatHandler]handlerMessage读取消息失败:", err)
+			}
 			break
 		}
+
 		h.handlerMessage(messageType, p)
 	}
 }
@@ -101,7 +109,7 @@ func (h *ChatHandler) handlerMessage(messageType int, p []byte) error {
 
 func (h *ChatHandler) startToChat(text string) error {
 
-	log.Printf("\033[1;31m用户说: %s\033[0m\n", text)
+	h.print(fmt.Sprintf("用户说: %s", text), "blue")
 
 	// 调用LLM服务，获取回复
 	resp, err := (*h.LLMClient).ChatStream(h.rpcCtx, &llm_proto.ChatRequest{
@@ -149,23 +157,14 @@ func (h *ChatHandler) startToChat(text string) error {
 				processed_index += i + 1
 
 				respText := fmt.Sprintf("%s%s", string(current_runes[:i]), string(p))
-				log.Printf("\033[1;32m大模型说: %s\033[0m\n", respText)
+				h.print(fmt.Sprintf("大模型说: %s", respText), "green")
 				if len(respText) > 0 {
-					// 向客户端发送开始文本消息
-					err = h.sendTextMessage(respText, dto.ChatStateSentenceStart, dto.ChatTypeTTS)
-					if err != nil {
-						break
-					}
+					h.sendTextMessage(respText, dto.ChatStateSentenceStart, dto.ChatTypeTTS)
+
 					// 向客户端发送音频消息
-					err = h.sendAudioMessage(respText)
-					if err != nil {
-						break
-					}
-					// 向客户端发送结束文本消息
-					err = h.sendTextMessage(respText, dto.ChatStateSentenceEnd, dto.ChatTypeTTS)
-					if err != nil {
-						break
-					}
+					h.sendAudioMessage(respText)
+
+					h.sendTextMessage(respText, dto.ChatStateSentenceEnd, dto.ChatTypeTTS)
 				}
 			}
 		}
