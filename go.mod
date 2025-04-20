@@ -35,6 +35,7 @@ require (
 require (
 	github.com/alphacep/vosk-api/go v0.3.50 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
+	github.com/antlr/antlr4 v0.0.0-20200417160354-8c50731894e0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
@@ -51,6 +52,7 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang-module/carbon/v2 v2.1.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
@@ -59,6 +61,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lestrrat-go/strftime v1.1.0 // indirect
+	github.com/mathiasXie/gen_sql_model v0.0.0-20241219080400-78c25055fb72 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -84,8 +87,11 @@ require (
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/image v0.13.0 // indirect
+	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/tools v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 )

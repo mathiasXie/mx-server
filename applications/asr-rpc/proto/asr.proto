@@ -13,6 +13,8 @@ service ASRService {
     // 语音转文本
     rpc SpeechToText (SpeechToTextRequest) returns (SpeechToTextResponse) {}
 
+    // 语音转文本
+    rpc SpeechToText (SpeechToTextRequest) returns (SpeechToTextResponse) {}
 }
 enum Provider {
   VOSK = 0;

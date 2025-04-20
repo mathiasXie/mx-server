@@ -1,5 +1,7 @@
 package consts
 
+import "fmt"
+
 type ErrCode struct {
 	raw     error // raw err
 	ErrCode string
@@ -7,9 +9,24 @@ type ErrCode struct {
 	ErrMsg string
 }
 
+func (e *ErrCode) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrCode, e.ErrMsg)
+}
+
 var (
 	RetSuccess = &ErrCode{nil, "CW0000", "成功"}
 
+	RetRoleNotFound = &ErrCode{nil, "CW0001", "角色不存在"}
+
+	RetUserNotFound = &ErrCode{nil, "CW0002", "用户不存在"}
+
+	RetDeviceNotFound = &ErrCode{nil, "CW0003", "设备不存在"}
+
+	RetDeviceBindCodeNotFound = &ErrCode{nil, "CW0004", "绑定码不存在"}
+
+	RetTTSConfigError = &ErrCode{nil, "CW0005", "TTS配置错误"}
+
+	RetLLMConfigError = &ErrCode{nil, "CW0006", "大模型配置错误"}
 	//	2000-3000 下游异常
 	RetRpcError = &ErrCode{nil, "CW2000", "系统调用异常:%s"}
 

@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/pkg/logger"
@@ -56,11 +57,11 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 	)
 
 	// 处理流式响应
+	totalContent := []string{}
 	for stream.Next() {
 		chunk := stream.Current()
-		logger.CtxInfo(ctx, "chunk: %v", chunk)
 		if len(chunk.Choices) > 0 {
-
+			totalContent = append(totalContent, chunk.Choices[0].Delta.Content)
 			// 发送响应
 			respChan <- ChatStreamResponse{
 				ID:      chunk.ID,
@@ -72,7 +73,8 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 		}
 
 	}
-
+	totalContentStr := strings.Join(totalContent, "")
+	logger.CtxInfo(ctx, "AliyunLLM[ChatStream] 流式对话结束: %s", totalContentStr)
 	if stream.Err() != nil {
 		return stream.Err()
 	}

@@ -28,10 +28,17 @@ resource:
   llm_rpc:
     host: localhost
     port: 50053
-provider:
-  llm: aliyun
-  asr: vosk
-  tts: aliyun
+provider: # 服务提供商，与rpc的provider一致，注意大小写
+  llm: ALIYUN
+  asr: VOSK
+  tts: ALIYUN
+languages:
+  - language: 中文
+    code: zh-CN
+  - language: 英文
+    code: en-US
+  - language: 日文
+    code: ja-JP
 log:
   file_directory: "logs"
   maxsize: 10

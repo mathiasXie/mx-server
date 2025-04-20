@@ -13,6 +13,9 @@ import (
 	llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	tts_proto "github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
+	internal_consts "github.com/mathiasXie/gin-web/applications/xiaozhi-server/internal/consts"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/internal/service"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader"
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"google.golang.org/grpc/metadata"
@@ -29,6 +32,10 @@ type ChatHandler struct {
 	conn            *websocket.Conn
 	sessionID       string
 	userInfo        *dto.UserInfo
+	deviceService   *service.DeviceService
+	messageService  *service.MessageService
+	userService     *service.UserService
+	roleService     *service.RoleService
 }
 
 func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
@@ -47,10 +54,15 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 	md := metadata.Pairs("trace_id", trace_id)
 	rpcCtx := metadata.NewOutgoingContext(ctx, md)
 	h.rpcCtx = rpcCtx
+
 	h.conn = conn
 	h.sessionID = trace_id
 	h.userInfo = &dto.UserInfo{}
 
+	h.deviceService = service.NewDeviceService(ctx, loader.GetDB(ctx, true))
+	h.messageService = service.NewMessageService(ctx, loader.GetDB(ctx, true))
+	h.userService = service.NewUserService(ctx, loader.GetDB(ctx, true))
+	h.roleService = service.NewRoleService(ctx, loader.GetDB(ctx, true))
 	for {
 		// 读取客户端发送的消息
 		messageType, p, err := conn.ReadMessage()
@@ -109,28 +121,39 @@ func (h *ChatHandler) handlerMessage(messageType int, p []byte) error {
 
 func (h *ChatHandler) startToChat(text string) error {
 
+	if !h.checkDeviceBindStatus() {
+		h.print("当前设备未绑定用户,引导用户前往绑定", "yellow")
+		return h.deviceBindHandler()
+	}
 	h.print(fmt.Sprintf("用户说: %s", text), "blue")
 
+	// 大模型服务配置
+	providerName, ok := llm_proto.LLMProvider_value[h.userInfo.Role.LLM]
+	if !ok {
+		logger.CtxError(h.rpcCtx, "[ChatHandler]startToChat大模型服务配置错误:", h.userInfo.Role.LLM)
+		return internal_consts.RetLLMConfigError
+	}
+	provider := llm_proto.LLMProvider(providerName)
 	// 调用LLM服务，获取回复
 	resp, err := (*h.LLMClient).ChatStream(h.rpcCtx, &llm_proto.ChatRequest{
 		Messages: []*llm_proto.ChatMessage{
 			{
 				Role:    llm_proto.ChatMessageRole_SYSTEM,
-				Content: "你是一个智能助手，请根据用户的问题给出回复,请简单明了，一句话搞定，不要使用复杂的句式",
+				Content: "你是一个智能助手，请根据用户的问题给出回复,请简单明了，一句话搞定，不要使用复杂的句式，请使用" + h.userInfo.Role.Language + "语言",
 			},
 			{
 				Role:    llm_proto.ChatMessageRole_USER,
 				Content: text,
 			},
 		},
-		Provider: llm_proto.LLMProvider_ALIYUN,
-		ModelId:  "qwen-plus",
+		Provider: provider,
+		ModelId:  h.userInfo.Role.LLMModelId,
 	})
 	if err != nil {
 		logger.CtxError(h.rpcCtx, "[ChatHandler]startToChat调用LLM服务失败:", err)
 		return err
 	}
-	splitChars := "。？！；："
+	splitChars := "。？！；：.?!"
 	// 将字符集转换为 rune 切片
 	full_text := ""
 	processed_index := 0
@@ -159,12 +182,10 @@ func (h *ChatHandler) startToChat(text string) error {
 				respText := fmt.Sprintf("%s%s", string(current_runes[:i]), string(p))
 				h.print(fmt.Sprintf("大模型说: %s", respText), "green")
 				if len(respText) > 0 {
-					h.sendTextMessage(respText, dto.ChatStateSentenceStart, dto.ChatTypeTTS)
 
 					// 向客户端发送音频消息
 					h.sendAudioMessage(respText)
 
-					h.sendTextMessage(respText, dto.ChatStateSentenceEnd, dto.ChatTypeTTS)
 				}
 			}
 		}

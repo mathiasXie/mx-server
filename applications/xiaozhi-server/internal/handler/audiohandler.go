@@ -7,6 +7,7 @@ import (
 	asr_proto "github.com/mathiasXie/gin-web/applications/asr-rpc/proto/pb/proto"
 	tts_proto "github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
+	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/internal/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"github.com/mathiasXie/gin-web/utils"
 	audio_utils "github.com/mathiasXie/gin-web/utils/audio"
@@ -60,13 +61,21 @@ func (h *ChatHandler) handlerAudioMessage(p []byte) error {
 }
 
 func (h *ChatHandler) sendAudioMessage(text string) error {
+
+	//获取TTS配置
+	providerName, ok := tts_proto.Provider_value[h.userInfo.Role.TTS]
+	if !ok {
+		logger.CtxError(h.rpcCtx, "[ChatHandler]sendAudioMessage用户的TTS配置错误:", h.userInfo.Role.TTS)
+		return consts.RetTTSConfigError
+	}
+	provider := tts_proto.Provider(providerName)
+	h.sendTextMessage(text, dto.ChatStateSentenceStart, dto.ChatTypeTTS)
+
 	// 发送一段语音给客户端
 	ttsResp, err := (*h.TTSClient).TextToSpeechStream(h.rpcCtx, &tts_proto.TextToSpeechRequest{
-		// Provider: tts_proto.Provider_VOLCENGINE,
-		// VoiceId:  "zh_female_wanwanxiaohe_moon_bigtts",
-		Provider: tts_proto.Provider_ALIYUN,
-		VoiceId:  "longxiaochun",
-		Language: "zh-CN",
+		Provider: provider,
+		VoiceId:  h.userInfo.Role.TTSVoiceId,
+		Language: h.userInfo.Role.Language,
 		Text:     text,
 	})
 	if err != nil {
@@ -100,6 +109,7 @@ func (h *ChatHandler) sendAudioMessage(text string) error {
 			}
 		}
 	}
+	h.sendTextMessage(text, dto.ChatStateSentenceEnd, dto.ChatTypeTTS)
 
 	return nil
 }
