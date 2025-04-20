@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	vosk "github.com/alphacep/vosk-api/go"
@@ -27,20 +25,12 @@ func NewVoskASR(config Config) (ASRProvider, error) {
 		return nil, fmt.Errorf("vosk asr requires a model path")
 	}
 
-	// 获取当前文件的调用栈信息
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return nil, fmt.Errorf("failed to get caller information")
-	}
-
-	// 获取文件所在的目录
-	dir := filepath.Dir(filename)
-	model, err := vosk.NewModel(fmt.Sprintf("%s/../models/%s", dir, config.Model))
+	model, err := vosk.NewModel(fmt.Sprintf("./models/%s", config.Model))
 	if err != nil {
 		logger.CtxError(context.Background(), "[VoskASR]NewModel失败：", err)
 		return nil, err
 	}
-	logger.CtxInfo(context.Background(), "[VoskASR]NewModel成功：", fmt.Sprintf("%s/../models/%s", dir, config.Model))
+	logger.CtxInfo(context.Background(), "[VoskASR]NewModel成功：", fmt.Sprintf("models/%s", config.Model))
 	return &VoskASR{
 		config: config,
 		model:  model,

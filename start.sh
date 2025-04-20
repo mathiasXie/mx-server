@@ -19,17 +19,16 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # 设置环境变量
-export SPEECHSDK_ROOT="$HOME/speechsdk" 
-export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
-export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
-export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
-
 export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
 
-export VOSK_PATH="$(pwd)/applications/asr-rpc/vosk_lib/"
-export LD_LIBRARY_PATH="$VOSK_PATH:$LD_LIBRARY_PATH"
-export CGO_CPPFLAGS="-I $VOSK_PATH"
-export CGO_LDFLAGS="$CGO_LDFLAGS -L $VOSK_PATH"
+
+if [ ! -d "models" ]; then
+    mkdir models
+fi
+if [ ! -d "cgo_libs" ]; then
+    mkdir cgo_libs
+fi
+
 
 # 服务列表
 services=(
@@ -66,42 +65,105 @@ if [[ $choice -lt 1 || $choice -gt 6 ]]; then
     choice=${input_choice:-6}  # 如果用户没有输入，则使用默认值6
 fi
 
+
+function START_ASR {
+    echo -e "\033[1;31mStarting ASR Service...\033[0m"
+
+    # 检查Vosk类库是否存在，不存在则下载
+    if [ ! -d "cgo_libs/vosk_lib" ]; then
+        echo -e "\033[1;31mError: vosk_lib directory not found!\033[0m"
+        echo -e "\033[1;31mDownloading vosk_lib...\033[0m"
+        # 根据CPU架构下载对应的Vosk类库
+        arch=$(uname -m)
+        if [[ "$arch" == "aarch64" ]]; then
+            wget -O cgo_libs/vosk-lib.zip https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-linux-aarch64-0.3.45.zip 
+        else
+            wget -O cgo_libs/vosk-lib.zip https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-linux-x86_64-0.3.45.zip 
+        fi
+        
+        unzip cgo_libs/vosk-lib.zip -d cgo_libs/
+        mv cgo_libs/vosk-linux* cgo_libs/vosk_lib
+        rm cgo_libs/vosk-lib.zip
+    fi
+
+    # 检查models目录是否存在，不存在则下载
+    if [ ! -d "models/vosk-model-cn-0.22" ]; then
+        echo -e "\033[1;31mError: vosk model directory not found!\033[0m"
+        echo -e "\033[1;31mDownloading vosk model...\033[0m"
+        wget -O models/vosk-model-cn-0.22.zip https://alphacephei.com/vosk/models/vosk-model-cn-0.22.zip
+        unzip models/vosk-model-cn-0.22.zip -d models
+        rm models/vosk-model-cn-0.22.zip
+    fi
+
+    export VOSK_PATH="$(pwd)/cgo_libs/vosk_lib/"
+    export LD_LIBRARY_PATH="$VOSK_PATH:$LD_LIBRARY_PATH"
+    export CGO_CPPFLAGS="-I $VOSK_PATH"
+    export CGO_LDFLAGS="$CGO_LDFLAGS -L $VOSK_PATH"
+    go run applications/asr-rpc/main.go -f applications/asr-rpc/conf &
+    PIDS+=($!)
+}
+
+function START_TTS {
+    echo -e "\033[1;33mStarting TTS Service...\033[0m"
+    export SPEECHSDK_ROOT="$(pwd)/cgo_libs/microsoft_speechsdk" 
+    export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
+    export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
+    export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
+    go run applications/tts-rpc/main.go -f applications/tts-rpc/conf &
+    PIDS+=($!)
+}
+
+function START_FUNCTION {
+    echo -e "\033[1;35mStarting Function Service...\033[0m"
+    go run applications/function-rpc/main.go -f applications/function-rpc/conf &
+    PIDS+=($!)
+}
+
+function START_LLM {
+    echo -e "\033[1;36mStarting LLM Service...\033[0m"
+    go run applications/llm-rpc/main.go -f applications/llm-rpc/conf &
+    PIDS+=($!)
+}
+
+function START_XIAOZHI {
+    echo -e "\033[1;37mStarting XiaoZhi Server...\033[0m"
+
+    # 检查是否安装 ffmpeg
+    if ! command -v ffmpeg &> /dev/null; then
+        echo -e "\033[1;31mError: ffmpeg could not be found!\033[0m"
+        echo -e "\033[1;31mPlease install ffmpeg first.\033[0m"
+        exit 1
+    fi
+    go run applications/xiaozhi-server/main.go -f applications/xiaozhi-server/conf &
+    PIDS+=($!)
+}
+
 # 启动服务
 case $choice in
     1)
-        echo -e "\033[1;32mStarting ASR Service...\033[0m"
-        go run applications/asr-rpc/main.go -f applications/asr-rpc/conf &
-        PIDS+=($!)
+        START_ASR
         ;;
     2)
-        echo -e "\033[1;32mStarting TTS Service...\033[0m"
-        go run applications/tts-rpc/main.go -f applications/tts-rpc/conf &
-        PIDS+=($!)
+        START_TTS
         ;;
     3)
-        echo -e "\033[1;32mStarting Function Service...\033[0m"
-        go run applications/function-rpc/main.go -f applications/function-rpc/conf &
-        PIDS+=($!)
+        START_FUNCTION
         ;;
     4)
-        echo -e "\033[1;32mStarting LLM Service...\033[0m"
-        go run applications/llm-rpc/main.go -f applications/llm-rpc/conf &
-        PIDS+=($!)
+        START_LLM
         ;;
     5)
-        echo -e "\033[1;32mStarting XiaoZhi Server...\033[0m"
-        go run applications/xiaozhi-server/main.go -f applications/xiaozhi-server/conf &
-        PIDS+=($!)
+        START_XIAOZHI
         ;;
     6)
         echo -e "\033[1;32mStarting All Services...\033[0m"
         for i in {1..5}; do
             case $i in
-                1) go run applications/asr-rpc/main.go -f applications/asr-rpc/conf & PIDS+=($!) ;;
-                2) go run applications/tts-rpc/main.go -f applications/tts-rpc/conf & PIDS+=($!) ;;
-                3) go run applications/function-rpc/main.go -f applications/function-rpc/conf & PIDS+=($!) ;;
-                4) go run applications/llm-rpc/main.go -f applications/llm-rpc/conf & PIDS+=($!) ;;
-                5) go run applications/xiaozhi-server/main.go -f applications/xiaozhi-server/conf & PIDS+=($!) ;;
+                1) START_ASR ;;
+                2) START_TTS ;;
+                3) START_FUNCTION ;;
+                4) START_LLM ;;
+                5) START_XIAOZHI ;;
             esac
         done
         ;;
