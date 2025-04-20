@@ -24,9 +24,11 @@ export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
 
 if [ ! -d "models" ]; then
     mkdir models
+    echo "*" > models/.gitignore
 fi
 if [ ! -d "cgo_libs" ]; then
     mkdir cgo_libs
+    echo "*" > cgo_libs/.gitignore
 fi
 
 
@@ -106,6 +108,17 @@ function START_ASR {
 function START_TTS {
     echo -e "\033[1;33mStarting TTS Service...\033[0m"
     export SPEECHSDK_ROOT="$(pwd)/cgo_libs/microsoft_speechsdk" 
+
+    # 检查cgo_libs/microsoft_speechsdk目录是否存在，不存在则下载
+    if [ ! -d "$SPEECHSDK_ROOT" ]; then
+        echo -e "\033[1;31mError: microsoft speechsdk directory not found!\033[0m"
+        echo -e "\033[1;31mDownloading microsoft speechsdk...\033[0m"
+        wget -O cgo_libs/SpeechSDK-Linux.tar.gz https://aka.ms/csspeech/linuxbinary
+        tar -xzvf cgo_libs/SpeechSDK-Linux.tar.gz -C cgo_libs/
+        rm cgo_libs/SpeechSDK-Linux.tar.gz
+        mv cgo_libs/SpeechSDK-Linux* $SPEECHSDK_ROOT
+    fi
+
     export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
     export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
     export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
