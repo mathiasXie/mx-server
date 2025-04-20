@@ -4,8 +4,8 @@ server:
   port: 8090
 resource:
   mysql:
-    host: localhost
-    port: 3306
+    host: 192.168.6.109
+    port: 30306
     user: mathias
     password: 123456
     db_name: spring

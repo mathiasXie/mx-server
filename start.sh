@@ -18,8 +18,6 @@ cleanup() {
 # 设置信号处理
 trap cleanup SIGINT SIGTERM
 
-# 设置环境变量
-export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
 
 
 if [ ! -d "models" ]; then
@@ -68,6 +66,7 @@ if [[ $choice -lt 1 || $choice -gt 6 ]]; then
 fi
 
 
+
 function START_ASR {
     echo -e "\033[1;31mStarting ASR Service...\033[0m"
 
@@ -98,7 +97,7 @@ function START_ASR {
     fi
 
     export VOSK_PATH="$(pwd)/cgo_libs/vosk_lib/"
-    export LD_LIBRARY_PATH="$VOSK_PATH:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$VOSK_PATH"
     export CGO_CPPFLAGS="-I $VOSK_PATH"
     export CGO_LDFLAGS="$CGO_LDFLAGS -L $VOSK_PATH"
     go run applications/asr-rpc/main.go -f applications/asr-rpc/conf &
@@ -121,7 +120,7 @@ function START_TTS {
 
     export CGO_CFLAGS="-I$SPEECHSDK_ROOT/include/c_api"
     export CGO_LDFLAGS="-L$SPEECHSDK_ROOT/lib/x64 -lMicrosoft.CognitiveServices.Speech.core"
-    export LD_LIBRARY_PATH="$SPEECHSDK_ROOT/lib/x64:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SPEECHSDK_ROOT/lib/x64"
     go run applications/tts-rpc/main.go -f applications/tts-rpc/conf &
     PIDS+=($!)
 }
@@ -141,12 +140,36 @@ function START_LLM {
 function START_XIAOZHI {
     echo -e "\033[1;37mStarting XiaoZhi Server...\033[0m"
 
-    # 检查是否安装 ffmpeg
-    if ! command -v ffmpeg &> /dev/null; then
-        echo -e "\033[1;31mError: ffmpeg could not be found!\033[0m"
-        echo -e "\033[1;31mPlease install ffmpeg first.\033[0m"
+    # 需要安装 opus opus-devel opusfile opusfile-devel ogg 
+    # 检查是否安装opus组件
+    if pkg-config --cflags --libs opus > /dev/null 2>&1; then
+        echo -e "\033[0;32mopus library installed successfully\033[0m"
+        pkg-config --cflags --libs opus
+    else
+        echo -e "\033[0;31mError:opus library installation may have problems,please check the error information\033[0m"
         exit 1
     fi
+
+    # 检查 gcc 是否安装
+    if command -v gcc &> /dev/null; then
+        echo -e "\033[0;32mgcc installed successfully\033[0m"
+        gcc --version
+    else
+        echo -e "\033[0;31mError:gcc installation may have problems,please check the error information\033[0m"
+        exit 1
+    fi
+
+    # 检查是否安装ffmpeg组件
+    if command -v ffmpeg &> /dev/null; then
+        echo -e "\033[0;32mffmpeg installed successfully\033[0m"
+    else
+        echo -e "\033[0;31mError:ffmpeg installation may have problems,please check the error information\033[0m"
+        exit 1
+    fi
+    # 设置环境变量
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig
+    export LD_LIBRARY_PATH="/usr/lib64:/usr/lib:$LD_LIBRARY_PATH"
+    echo "LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
     go run applications/xiaozhi-server/main.go -f applications/xiaozhi-server/conf &
     PIDS+=($!)
 }
@@ -170,15 +193,11 @@ case $choice in
         ;;
     6)
         echo -e "\033[1;32mStarting All Services...\033[0m"
-        for i in {1..5}; do
-            case $i in
-                1) START_ASR ;;
-                2) START_TTS ;;
-                3) START_FUNCTION ;;
-                4) START_LLM ;;
-                5) START_XIAOZHI ;;
-            esac
-        done
+        START_ASR
+        START_TTS
+        START_FUNCTION
+        START_LLM
+        START_XIAOZHI
         ;;
 esac
 
