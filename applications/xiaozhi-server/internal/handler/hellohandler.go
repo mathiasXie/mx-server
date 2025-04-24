@@ -61,7 +61,8 @@ func (h *ChatHandler) handlerHelloMessage(chatRequest *dto.ChatRequest) error {
 func (h *ChatHandler) deviceBindHandler() error {
 	bindCode := h.deviceService.GenerateBindCode(h.userInfo.Device)
 
-	h.sendAudioMessage(fmt.Sprintf("请在后台管理页面绑定设备,绑定码为: %d", bindCode))
+	text := fmt.Sprintf("请前往用户中心绑定设备,验证码是%d", bindCode)
+	h.sendAudioMessage(text)
 	return nil
 }
 

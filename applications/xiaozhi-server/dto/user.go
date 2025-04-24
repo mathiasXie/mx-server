@@ -22,3 +22,16 @@ type DeviceInfo struct {
 	DeviceMac  string `json:"device_mac"`
 	Token      string `json:"token"`
 }
+
+type SignInRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type SignUpRequest struct {
+	Username       string `json:"username" binding:"required"`
+	Password       string `json:"password" binding:"required"`
+	RepeatPassword string `json:"repeat_password" binding:"required"`
+	Email          string `json:"email" binding:"required"`
+	Phone          string `json:"phone" binding:"required"`
+}

@@ -7,6 +7,12 @@ YELLOW="\033[1;33m"
 CYAN="\033[0;36m"
 RESET="\033[0m"
 
+# 检查是否为 root 用户
+if [ "$EUID" -ne 0 ]; then
+  echo -e "${YELLOW}请使用 root 或 sudo 权限运行此脚本${RESET}"
+  exit 1
+fi
+
 echo -e "${GREEN}>>> 检测系统类型...${RESET}"
 
 OS_TYPE="$(uname -s)"
@@ -16,6 +22,7 @@ case "$OS_TYPE" in
         if [ -f /etc/os-release ]; then
             . /etc/os-release
             OS=$ID
+            VERSION_ID=$VERSION_ID
         else
             echo "无法识别 Linux 系统，缺少 /etc/os-release"
             exit 1
@@ -37,19 +44,20 @@ if [[ "$OS" =~ (rhel|centos|rocky|almalinux|fedora) ]]; then
 
     echo -e "${GREEN}>>> 安装 EPEL 和 RPMFusion 源${RESET}"
     $PM install -y epel-release || true
+    MAJOR_VERSION=${VERSION_ID%%.*}
     $PM install -y \
-        https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm || true
+        "https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm" \
+        "https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-${MAJOR_VERSION}.noarch.rpm" || true
 
-    echo -e "${GREEN}>>> 更新缓存并安装依赖（opus, opusfile, ogg, gcc, ffmpeg）${RESET}"
+    echo -e "${GREEN}>>> 更新缓存并安装依赖（opus, opusfile, ogg, gcc, ffmpeg, zip）${RESET}"
     $PM makecache -y
-    $PM install -y opus opus-devel opusfile opusfile-devel libogg-devel gcc ffmpeg ffmpeg-devel pkgconfig
+    $PM install -y opus opus-devel opusfile opusfile-devel libogg-devel gcc ffmpeg ffmpeg-devel pkgconfig zip unzip
 
 # === Debian 系系统 ===
 elif [[ "$OS" =~ (debian|ubuntu|linuxmint) ]]; then
     echo -e "${GREEN}>>> 检测到 Debian 系系统：$OS${RESET}"
     apt update -y
-    apt install -y libopus-dev libopusfile-dev libogg-dev gcc ffmpeg pkg-config
+    apt install -y libopus-dev libopusfile-dev libogg-dev gcc ffmpeg pkg-config zip unzip
 
 # === macOS 系统 ===
 elif [[ "$OS" == "macos" ]]; then
@@ -60,8 +68,8 @@ elif [[ "$OS" == "macos" ]]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"  # 支持 M1/M2
     fi
 
-    echo -e "${GREEN}>>> 使用 Homebrew 安装 opus、opusfile、ogg 和 gcc${RESET}"
-    brew install opus opusfile libogg gcc ffmpeg pkg-config
+    echo -e "${GREEN}>>> 使用 Homebrew 安装 opus、opusfile、ogg、gcc、ffmpeg、zip${RESET}"
+    brew install opus opusfile libogg gcc ffmpeg pkg-config zip unzip
 else
     echo -e "${YELLOW}未知或未适配的系统: $OS${RESET}"
     exit 1
@@ -76,4 +84,13 @@ else
     echo -e "${GREEN}pkg-config 成功识别 opusfile: $(pkg-config --modversion opusfile)${RESET}"
 fi
 
+echo -e "${GREEN}>>> 验证 ffmpeg 是否可用${RESET}"
+if ! pkg-config --modversion ffmpeg >/dev/null 2>&1; then
+    echo -e "${YELLOW}警告：未找到 ffmpeg.pc，请检查 PKG_CONFIG_PATH 设置${RESET}"
+    echo -e "建议添加：${CYAN}export PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/opt/homebrew/lib/pkgconfig${RESET}"
+else
+    echo -e "${GREEN}pkg-config 成功识别 ffmpeg: $(pkg-config --modversion ffmpeg)${RESET}"
+fi
+
+echo -e "${CYAN}当前 pkg-config 搜索路径：$(pkg-config --variable pc_path pkg-config)${RESET}"
 echo -e "${GREEN}>>> 安装完成 ✅${RESET}"

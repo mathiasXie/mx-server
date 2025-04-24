@@ -72,7 +72,7 @@ function START_ASR {
 
     # 检查Vosk类库是否存在，不存在则下载
     if [ ! -d "cgo_libs/vosk_lib" ]; then
-        echo -e "\033[1;31mError: vosk_lib directory not found!\033[0m"
+        echo -e "\033[1;31mWarning: vosk_lib directory not found!\033[0m"
         echo -e "\033[1;31mDownloading vosk_lib...\033[0m"
         # 根据CPU架构下载对应的Vosk类库
         arch=$(uname -m)
@@ -89,7 +89,7 @@ function START_ASR {
 
     # 检查models目录是否存在，不存在则下载
     if [ ! -d "models/vosk-model-cn-0.22" ]; then
-        echo -e "\033[1;31mError: vosk model directory not found!\033[0m"
+        echo -e "\033[1;31mWarning: vosk model directory not found!\033[0m"
         echo -e "\033[1;31mDownloading vosk model...\033[0m"
         wget -O models/vosk-model-cn-0.22.zip https://alphacephei.com/vosk/models/vosk-model-cn-0.22.zip
         unzip models/vosk-model-cn-0.22.zip -d models
@@ -110,7 +110,7 @@ function START_TTS {
 
     # 检查cgo_libs/microsoft_speechsdk目录是否存在，不存在则下载
     if [ ! -d "$SPEECHSDK_ROOT" ]; then
-        echo -e "\033[1;31mError: microsoft speechsdk directory not found!\033[0m"
+        echo -e "\033[1;31mWarning: microsoft speechsdk directory not found!\033[0m"
         echo -e "\033[1;31mDownloading microsoft speechsdk...\033[0m"
         wget -O cgo_libs/SpeechSDK-Linux.tar.gz https://aka.ms/csspeech/linuxbinary
         tar -xzvf cgo_libs/SpeechSDK-Linux.tar.gz -C cgo_libs/

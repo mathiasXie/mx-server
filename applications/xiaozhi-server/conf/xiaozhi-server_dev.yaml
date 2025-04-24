@@ -30,8 +30,10 @@ resource:
     port: 50053
 provider: # 服务提供商，与rpc的provider一致，注意大小写
   llm: ALIYUN
+  default_model: qwen-plus
   asr: VOSK
   tts: ALIYUN
+  default_voice: longxiaochun
 languages:
   - language: 中文
     code: zh-CN

@@ -12,6 +12,7 @@ type Config struct {
 	FunctionRPC       FunctionConfig `yaml:"function_rpc" json:"function_rpc"`
 	LLM               LLMConfig      `yaml:"llm" json:"llm"`
 	ASR               ASRConfig      `yaml:"asr" json:"asr"`
+	Provider          ProviderConfig `yaml:"provider" json:"provider"`
 }
 
 // Instance 全局配置实例

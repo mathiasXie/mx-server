@@ -8,6 +8,7 @@ import (
 	tts_proto "github.com/mathiasXie/gin-web/applications/tts-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/dto"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/internal/consts"
+	"github.com/mathiasXie/gin-web/config"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"github.com/mathiasXie/gin-web/utils"
 	audio_utils "github.com/mathiasXie/gin-web/utils/audio"
@@ -62,20 +63,32 @@ func (h *ChatHandler) handlerAudioMessage(p []byte) error {
 
 func (h *ChatHandler) sendAudioMessage(text string) error {
 
-	//获取TTS配置
-	providerName, ok := tts_proto.Provider_value[h.userInfo.Role.TTS]
-	if !ok {
-		logger.CtxError(h.rpcCtx, "[ChatHandler]sendAudioMessage用户的TTS配置错误:", h.userInfo.Role.TTS)
-		return consts.RetTTSConfigError
+	var providerName int32
+	var voiceId string
+	var language string
+	// 用户没有配置角色，可能是没有绑定设备，使用系统默认声音id
+	if h.userInfo.Role == nil {
+		providerName = tts_proto.Provider_value[config.Instance.Provider.TTS]
+		voiceId = config.Instance.Provider.DefaultVoice
+	} else {
+		//获取TTS配置
+		var ok bool
+		providerName, ok = tts_proto.Provider_value[h.userInfo.Role.TTS]
+		if !ok {
+			logger.CtxError(h.rpcCtx, "[ChatHandler]sendAudioMessage用户的TTS配置错误:", h.userInfo.Role.TTS)
+			return consts.RetTTSConfigError
+		}
+		voiceId = h.userInfo.Role.TTSVoiceId
+		language = h.userInfo.Role.Language
 	}
-	provider := tts_proto.Provider(providerName)
+
 	h.sendTextMessage(text, dto.ChatStateSentenceStart, dto.ChatTypeTTS)
 
 	// 发送一段语音给客户端
 	ttsResp, err := (*h.TTSClient).TextToSpeechStream(h.rpcCtx, &tts_proto.TextToSpeechRequest{
-		Provider: provider,
-		VoiceId:  h.userInfo.Role.TTSVoiceId,
-		Language: h.userInfo.Role.Language,
+		Provider: tts_proto.Provider(providerName),
+		VoiceId:  voiceId,
+		Language: language,
 		Text:     text,
 	})
 	if err != nil {

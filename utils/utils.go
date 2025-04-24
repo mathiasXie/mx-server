@@ -99,13 +99,13 @@ func GenerateLogId() string {
 
 const TokenExpireDuration = time.Hour * 24 * 2 // 过期时间 -2天
 type TokenClaims struct {
-	UserID   uint64 `json:"user_id"`
+	UserID   int    `json:"user_id"`
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
 // MakeToken 生成 jwt token
-func MakeToken(userID uint64, username string) (string, error) {
+func MakeToken(userID int, username string) (string, error) {
 	var claims = TokenClaims{
 		userID,
 		username,
