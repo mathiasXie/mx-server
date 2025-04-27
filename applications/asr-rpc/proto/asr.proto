@@ -13,8 +13,8 @@ service ASRService {
     // 语音转文本
     rpc SpeechToText (SpeechToTextRequest) returns (SpeechToTextResponse) {}
 
-    // 语音转文本
-    rpc SpeechToText (SpeechToTextRequest) returns (SpeechToTextResponse) {}
+    // 语音活动检测
+    rpc DetectVAD (DetectVADRequest) returns (DetectVADResponse) {}
 }
 enum Provider {
   VOSK = 0;
@@ -34,3 +34,12 @@ message SpeechToTextRequest  {
 message SpeechToTextResponse {
   string text = 1;           // 要转换的文本
 } 
+
+message DetectVADRequest  {
+  bytes audio_data = 1;     // 音频数据
+} 
+message DetectVADResponse  {
+  bool is_activity = 1;     // 是否有语音活动
+} 
+
+

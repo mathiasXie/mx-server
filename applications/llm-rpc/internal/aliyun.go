@@ -74,7 +74,7 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 
 	}
 	totalContentStr := strings.Join(totalContent, "")
-	logger.CtxInfo(ctx, "AliyunLLM[ChatStream] 流式对话结束: %s", totalContentStr)
+	logger.CtxInfo(ctx, "AliyunLLM[ChatStream] 流式对话结束: ", totalContentStr)
 	if stream.Err() != nil {
 		return stream.Err()
 	}

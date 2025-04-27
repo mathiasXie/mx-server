@@ -6,7 +6,6 @@ import (
 
 	llm "github.com/mathiasXie/gin-web/applications/llm-rpc/internal"
 	"github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
-	"github.com/mathiasXie/gin-web/config"
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
 	"google.golang.org/grpc/metadata"
@@ -14,48 +13,20 @@ import (
 
 type Server struct {
 	proto.UnimplementedLLMServiceServer
-	llmConfigs map[proto.LLMProvider]llm.Config
+	llmProviders map[proto.LLMProvider]llm.LLMProvider
 }
 
 func NewServer() *Server {
 
-	llmConfigs := map[proto.LLMProvider]llm.Config{
-		proto.LLMProvider_VOLCENGINE: {
-			APIKey:         config.Instance.LLM.VolcEngine.AuthToken,
-			BaseURL:        config.Instance.LLM.VolcEngine.BaseURL,
-			Models:         config.Instance.LLM.VolcEngine.Models,
-			DefaultModelID: config.Instance.LLM.VolcEngine.DefaultModelID,
-		},
-		proto.LLMProvider_ALIYUN: {
-			APIKey:         config.Instance.LLM.Aliyun.APIKey,
-			BaseURL:        config.Instance.LLM.Aliyun.BaseURL,
-			DefaultModelID: config.Instance.LLM.Aliyun.DefaultModelID,
-			Models:         config.Instance.LLM.Aliyun.Models,
-		},
-	}
-
 	return &Server{
-		llmConfigs: llmConfigs,
+		llmProviders: llm.NewInstanceLLMProvider(),
 	}
 }
 
 func (s *Server) getLLMProvider(ctx context.Context, provider proto.LLMProvider) (llm.LLMProvider, context.Context, error) {
-	llmConfig, ok := s.llmConfigs[provider]
-	if !ok {
-		logger.CtxError(ctx, "failed to create llm provider: %v", provider)
-		return nil, ctx, fmt.Errorf("failed to create llm provider: %v", provider)
-	}
-	var llmProvider llm.LLMProvider
-	var err error
-	switch provider {
-	case proto.LLMProvider_VOLCENGINE:
-		llmProvider, err = llm.NewVolcEngineLLM(llmConfig)
-	case proto.LLMProvider_ALIYUN:
-		llmProvider, err = llm.NewAliyunLLM(llmConfig)
-	}
-	if err != nil {
-		return nil, ctx, fmt.Errorf("failed to create llm provider: %v", err)
-	}
+
+	llmProvider := s.llmProviders[provider]
+
 	// 从上下文中获取元数据
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
@@ -75,8 +46,8 @@ func (s *Server) ChatStream(req *proto.ChatRequest, stream proto.LLMService_Chat
 		logger.CtxError(stream.Context(), "failed to get llm provider: %v", err)
 		return fmt.Errorf("failed to get llm provider: %v", err)
 	}
-	logger.CtxInfo(stream.Context(), "llm provider: %v", llmProvider)
-	logger.CtxInfo(stream.Context(), "got request: %v", req)
+	// logger.CtxInfo(stream.Context(), "llm provider: %v", llmProvider)
+	// logger.CtxInfo(stream.Context(), "got request: %v", req)
 
 	// 创建响应通道
 	respChan := make(chan llm.ChatStreamResponse)
@@ -85,7 +56,7 @@ func (s *Server) ChatStream(req *proto.ChatRequest, stream proto.LLMService_Chat
 	go func() {
 		err := llmProvider.ChatStream(ctx, req.ModelId, req.Messages, respChan)
 		if err != nil {
-			logger.CtxError(stream.Context(), "failed to chat stream: %v", err)
+			//logger.CtxError(stream.Context(), "failed to chat stream: %v", err)
 			// 发送错误响应
 			respChan <- llm.ChatStreamResponse{
 				Content: fmt.Sprintf("Error: %v", err),

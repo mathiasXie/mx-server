@@ -75,8 +75,9 @@ else
     exit 1
 fi
 
+
 # === 通用验证 ===
-echo -e "${GREEN}>>> 验证 opusfile 是否可用${RESET}"
+echo -e "${YELLOW}>>> 验证 opusfile 是否可用${RESET}"
 if ! pkg-config --modversion opusfile >/dev/null 2>&1; then
     echo -e "${YELLOW}警告：未找到 opusfile.pc，请检查 PKG_CONFIG_PATH 设置${RESET}"
     echo -e "建议添加：${CYAN}export PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/opt/homebrew/lib/pkgconfig${RESET}"
@@ -84,13 +85,13 @@ else
     echo -e "${GREEN}pkg-config 成功识别 opusfile: $(pkg-config --modversion opusfile)${RESET}"
 fi
 
-echo -e "${GREEN}>>> 验证 ffmpeg 是否可用${RESET}"
-if ! pkg-config --modversion ffmpeg >/dev/null 2>&1; then
-    echo -e "${YELLOW}警告：未找到 ffmpeg.pc，请检查 PKG_CONFIG_PATH 设置${RESET}"
-    echo -e "建议添加：${CYAN}export PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/opt/homebrew/lib/pkgconfig${RESET}"
+# === 验证 ffmpeg 是否可用 === ffmpeg不是pkg包，是单独的命令
+echo -e "${YELLOW}>>> 验证 ffmpeg 是否可用${RESET}"
+if ! command -v ffmpeg -version >/dev/null 2>&1; then
+    echo -e "${YELLOW}警告：未找到 ffmpeg，请检查是否安装${RESET}"
 else
-    echo -e "${GREEN}pkg-config 成功识别 ffmpeg: $(pkg-config --modversion ffmpeg)${RESET}"
+    echo -e "${GREEN}ffmpeg 成功识别${RESET}"
 fi
 
-echo -e "${CYAN}当前 pkg-config 搜索路径：$(pkg-config --variable pc_path pkg-config)${RESET}"
+echo -e "${YELLOW}当前 pkg-config 搜索路径：$(pkg-config --variable pc_path pkg-config)${RESET}"
 echo -e "${GREEN}>>> 安装完成 ✅${RESET}"

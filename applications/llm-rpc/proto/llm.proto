@@ -19,6 +19,8 @@ service LLMService {
 enum LLMProvider {
   VOLCENGINE = 0;
   ALIYUN = 1;
+  GLM = 2; // 智谱
+  COZE = 3; // 扣子
 }
 
 // 聊天请求

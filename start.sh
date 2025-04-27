@@ -87,6 +87,23 @@ function START_ASR {
         rm cgo_libs/vosk-lib.zip
     fi
 
+    # 检查Vad类库onnx是否存在，不存在则下载
+    if [ ! -d "cgo_libs/onnxruntime_lib" ]; then
+        echo -e "\033[1;31mWarning: onnxruntime directory not found!\033[0m"
+        echo -e "\033[1;31mDownloading onnxruntime...\033[0m"
+        # 根据CPU架构下载对应的Vosk类库
+        arch=$(uname -m)
+        if [[ "$arch" == "aarch64" ]]; then
+            wget -O cgo_libs/onnxruntime-lib.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.18.1/onnxruntime-linux-aarch64-1.18.1.tgz 
+        else
+            wget -O cgo_libs/onnxruntime-lib.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.18.1/onnxruntime-linux-x64-1.18.1.tgz 
+        fi
+
+        tar -xzvf cgo_libs/onnxruntime-lib.tgz -C cgo_libs/
+        mv cgo_libs/onnxruntime-linux* cgo_libs/onnxruntime_lib
+        rm cgo_libs/onnxruntime-lib.tgz
+    fi
+
     # 检查models目录是否存在，不存在则下载
     if [ ! -d "models/vosk-model-cn-0.22" ]; then
         echo -e "\033[1;31mWarning: vosk model directory not found!\033[0m"
@@ -96,10 +113,22 @@ function START_ASR {
         rm models/vosk-model-cn-0.22.zip
     fi
 
+        # 检查models目录是否存在，不存在则下载
+    #if [ ! -d "models/silero_vad.onnx" ]; then
+    if [ ! -e "models/silero_vad.onnx" ]; then
+
+        echo -e "\033[1;31mWarning: silero_vad.onnx not found!\033[0m"
+        echo -e "\033[1;31mDownloading silero_vad.onnx...\033[0m"
+        wget -O models/silero_vad.onnx https://github.com/snakers4/silero-vad/raw/master/src/silero_vad/data/silero_vad.onnx
+    fi
+
     export VOSK_PATH="$(pwd)/cgo_libs/vosk_lib/"
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$VOSK_PATH"
+    export ONNX_PATH="$(pwd)/cgo_libs/onnxruntime_lib"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$VOSK_PATH:$ONNX_PATH/lib"
     export CGO_CPPFLAGS="-I $VOSK_PATH"
     export CGO_LDFLAGS="$CGO_LDFLAGS -L $VOSK_PATH"
+    export CGO_LDFLAGS="$CGO_LDFLAGS -L $ONNX_PATH/lib -lonnxruntime"
+    export CGO_CFLAGS="-I$ONNX_PATH/include"
     go run applications/asr-rpc/main.go -f applications/asr-rpc/conf &
     PIDS+=($!)
 }

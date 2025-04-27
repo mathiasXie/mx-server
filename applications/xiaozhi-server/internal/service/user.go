@@ -105,6 +105,7 @@ func (s *UserService) GetUserByRoleId(roleId int) (*dto.UserInfo, error) {
 			TTS:        userRole.Tts,
 			TTSVoiceId: userRole.TtsVoiceId,
 			Language:   userRole.Language,
+			RoleDesc:   userRole.RoleDesc,
 		},
 	}, nil
 }

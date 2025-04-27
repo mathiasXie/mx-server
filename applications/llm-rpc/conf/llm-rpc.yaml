@@ -11,8 +11,8 @@ log:
   log_id_show_header: true
 llm:
   volcengine:
-    auth_token: "6473c955-206c-4bae-af25-97c292c5ee50"
-    base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    api_key: "6473c955-206c-4bae-af25-97c292c5ee50"
+    base_url: "https://ark.cn-beijing.volces.com/api/v3/"
     default_model_id: "deepseek-v3-250324"
     models:
       - deepseek-v3-250324
@@ -26,4 +26,11 @@ llm:
     default_model_id: "qwen-plus"
     models:
       - deepseek-v3-250324
+      - qwen-plus
+  glm:
+    api_key: "304f5368467147348a2f272c35b6e653.q4DwQTZB7KyT2mA8"
+    base_url: "https://open.bigmodel.cn/api/paas/v4/"
+    default_model_id: glm-4-flash
+    models:
+      - glm-4-flash
 

@@ -12,29 +12,28 @@ import (
 	"github.com/openai/openai-go/option"
 )
 
-type VolcEngineLLM struct {
+type OpenAILLM struct {
 	config Config
 	client *openai.Client
 }
 
-// NewVolcEngineLLM创建新的火山引擎
-func NewVolcEngineLLM(config Config) (LLMProvider, error) {
+func NewOpenAILLM(config Config) (LLMProvider, error) {
 
 	if config.APIKey == "" {
-		return nil, fmt.Errorf("voclengine llm requires an API key")
+		return nil, fmt.Errorf("openai llm requires an API key")
 	}
 	client := openai.NewClient(
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(config.BaseURL),
 	)
-	return &VolcEngineLLM{
+	return &OpenAILLM{
 		config: config,
 		client: client,
 	}, nil
 }
 
 // ChatStream 实现流式对话
-func (a *VolcEngineLLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
+func (a *OpenAILLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
 	// 构建消息列表
 	chatMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
 	for i, msg := range messages {
@@ -76,7 +75,7 @@ func (a *VolcEngineLLM) ChatStream(ctx context.Context, modelID string, messages
 
 	}
 	totalContentStr := strings.Join(totalContent, "")
-	logger.CtxInfo(ctx, "VolcEngineLLM[ChatStream] 流式对话结束: ", totalContentStr)
+	logger.CtxInfo(ctx, "OpenAILLM[ChatStream] 流式对话结束: ", totalContentStr)
 	if stream.Err() != nil {
 		return stream.Err()
 	}
@@ -88,6 +87,6 @@ func (a *VolcEngineLLM) ChatStream(ctx context.Context, modelID string, messages
 	return nil
 }
 
-func (a *VolcEngineLLM) GetModelList(ctx context.Context) ([]string, error) {
+func (a *OpenAILLM) GetModelList(ctx context.Context) ([]string, error) {
 	return a.config.Models, nil
 }

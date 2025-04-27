@@ -14,7 +14,7 @@ type AiMessage struct {
 	DeviceId  int32     `gorm:"column:device_id" json:"device_id"` // 此消息的设备id
 	Id        int32     `gorm:"column:id;primary_key" json:"id"`   // Primary Key
 	UserId    int32     `gorm:"column:user_id" json:"user_id"`     // 此消息的用户id
-	Messsage  string    `gorm:"column:messsage" json:"messsage"`   // 消息内容
+	Message   string    `gorm:"column:message" json:"message"`     // 消息内容
 	Role      string    `gorm:"column:role" json:"role"`           // 消息由谁发出,USER,ASSISTANT
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`

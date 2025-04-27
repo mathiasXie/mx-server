@@ -78,3 +78,7 @@ func (s *Server) SpeechToText(ctx context.Context, req *proto.SpeechToTextReques
 		Text: text,
 	}, nil
 }
+
+func (s *Server) DetectVAD(ctx context.Context, req *proto.DetectVADRequest) (*proto.DetectVADResponse, error) {
+	return asr.SileroVadDetect(ctx, req.AudioData)
+}

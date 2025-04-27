@@ -22,20 +22,25 @@ import (
 )
 
 type ChatHandler struct {
-	LLMClient       *llm_proto.LLMServiceClient
-	TTSClient       *tts_proto.TTSServiceClient
-	ASRClient       *asr_proto.ASRServiceClient
-	asrAudio        []byte
-	clientHaveVoice bool
-	clientVoiceStop bool
-	rpcCtx          context.Context
-	conn            *websocket.Conn
-	sessionID       string
-	userInfo        *dto.UserInfo
-	deviceService   *service.DeviceService
-	messageService  *service.MessageService
-	userService     *service.UserService
-	roleService     *service.RoleService
+	LLMClient        *llm_proto.LLMServiceClient
+	TTSClient        *tts_proto.TTSServiceClient
+	ASRClient        *asr_proto.ASRServiceClient
+	asrAudio         []byte
+	clientHaveVoice  bool
+	clientVoiceStop  bool
+	rpcCtx           context.Context
+	conn             *websocket.Conn
+	sessionID        string
+	userInfo         *dto.UserInfo
+	deviceService    *service.DeviceService
+	messageService   *service.MessageService
+	userService      *service.UserService
+	roleService      *service.RoleService
+	clientListenMode string
+
+	vadSilenceThreshold  int64
+	vadLastHaveVoiceTime int64
+	vadAudioBuffer       []byte
 }
 
 func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
@@ -63,6 +68,9 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 	h.messageService = service.NewMessageService(ctx, loader.GetDB(ctx, true))
 	h.userService = service.NewUserService(ctx, loader.GetDB(ctx, true))
 	h.roleService = service.NewRoleService(ctx, loader.GetDB(ctx, true))
+
+	h.clientListenMode = "manual"
+	h.vadSilenceThreshold = 700
 	for {
 		// 读取客户端发送的消息
 		messageType, p, err := conn.ReadMessage()
@@ -95,23 +103,32 @@ func (h *ChatHandler) handlerMessage(messageType int, p []byte) error {
 		// 客户端连接问候消息
 		if chatRequest.Type == dto.ChatTypeHello {
 			return h.handlerHelloMessage(&chatRequest)
-		}
-		// 收到音频开始消息
-		if chatRequest.State == dto.ChatStateStart {
-			h.clientHaveVoice = true
-			h.clientVoiceStop = false
-		}
-		// 收到音频结束消息
-		if chatRequest.State == dto.ChatStateStop {
-			h.clientHaveVoice = true
-			h.clientVoiceStop = true
-			if len(h.asrAudio) > 0 {
-				return h.handlerAudioMessage(nil)
+		} else if chatRequest.Type == dto.ChatTypeAbort {
+
+		} else if chatRequest.Type == dto.ChatTypeListen {
+
+			if chatRequest.Mode == "auto" {
+				h.clientListenMode = "auto"
+				h.print("自动拾音模式", "blue")
 			}
-		}
-		// 处理detect消息
-		if chatRequest.State == dto.ChatStateDetect {
-			return h.startToChat(chatRequest.Text)
+			// 收到音频开始消息
+			if chatRequest.State == dto.ChatStateStart {
+				h.clientHaveVoice = true
+				h.clientVoiceStop = false
+			}
+			// 收到音频结束消息
+			if chatRequest.State == dto.ChatStateStop {
+				h.clientHaveVoice = true
+				h.clientVoiceStop = true
+				if len(h.asrAudio) > 0 {
+					return h.handlerAudioMessage(nil)
+				}
+			}
+			// 处理detect消息
+			if chatRequest.State == dto.ChatStateDetect {
+				return h.startToChat(chatRequest.Text)
+			}
+		} else if chatRequest.Type == dto.ChatTypeIOT {
 		}
 	} else if messageType == websocket.BinaryMessage {
 		return h.handlerAudioMessage(p)
@@ -134,18 +151,14 @@ func (h *ChatHandler) startToChat(text string) error {
 		return internal_consts.RetLLMConfigError
 	}
 	provider := llm_proto.LLMProvider(providerName)
+
+	//prompt := fmt.Sprintf("%s\n%s", config.Instance.Provider.PromptPrefix, h.userInfo.Role.RoleDesc)
+	// 构造聊天上下文，会存储最近5条聊天记录
+	//messages := h.generateChatContext("USER", text, prompt)
+	h.storeChatRecord("USER", text)
 	// 调用LLM服务，获取回复
 	resp, err := (*h.LLMClient).ChatStream(h.rpcCtx, &llm_proto.ChatRequest{
-		Messages: []*llm_proto.ChatMessage{
-			{
-				Role:    llm_proto.ChatMessageRole_SYSTEM,
-				Content: "你是一个智能助手，请根据用户的问题给出回复,请简单明了，一句话搞定，不要使用复杂的句式，请使用" + h.userInfo.Role.Language + "语言",
-			},
-			{
-				Role:    llm_proto.ChatMessageRole_USER,
-				Content: text,
-			},
-		},
+		Messages: h.userInfo.ChatMessages,
 		Provider: provider,
 		ModelId:  h.userInfo.Role.LLMModelId,
 	})
@@ -153,11 +166,12 @@ func (h *ChatHandler) startToChat(text string) error {
 		logger.CtxError(h.rpcCtx, "[ChatHandler]startToChat调用LLM服务失败:", err)
 		return err
 	}
-	splitChars := "。？！；：.?!"
+	splitChars := "。？！；：?!"
 	// 将字符集转换为 rune 切片
 	full_text := ""
 	processed_index := 0
 	full_runes := make([]rune, 0)
+	//服务器开始发送语音
 	h.sendTTSMessage(dto.ChatStateStart)
 
 	for {
@@ -190,7 +204,9 @@ func (h *ChatHandler) startToChat(text string) error {
 			}
 		}
 	}
+	//服务器语音传输结束
 	h.sendTTSMessage(dto.ChatStateStop)
+	h.storeChatRecord("ASSISTANT", full_text)
 
 	return nil
 }
@@ -209,4 +225,26 @@ func (h *ChatHandler) sendTextMessage(text string, state dto.ChatState, chatType
 		return err
 	}
 	return nil
+}
+
+// 存储聊天记录
+func (h *ChatHandler) storeChatRecord(role string, text string) {
+
+	// 确保会话中只存5条记录，否则删除第2条，要不然LLM输入token会太多
+	if len(h.userInfo.ChatMessages) >= 5 {
+		h.userInfo.ChatMessages = append(h.userInfo.ChatMessages[:1], h.userInfo.ChatMessages[2:]...)
+	}
+
+	h.userInfo.ChatMessages = append(h.userInfo.ChatMessages, &llm_proto.ChatMessage{
+		Role:    llm_proto.ChatMessageRole(llm_proto.ChatMessageRole_value[role]),
+		Content: text,
+	})
+
+	// 另开一个协程，存入DB
+	go func() {
+		err := h.messageService.StoreChatRecord(h.userInfo.ID, h.userInfo.Device.Id, role, text)
+		if err != nil {
+			logger.CtxError(h.rpcCtx, "[ChatHandler]storeChatRecord存储聊天记录失败:", err)
+		}
+	}()
 }

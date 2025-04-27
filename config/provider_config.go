@@ -5,4 +5,5 @@ type ProviderConfig struct {
 	ASR          string `yaml:"asr" json:"asr"`
 	TTS          string `yaml:"tts" json:"tts"`
 	DefaultVoice string `yaml:"default_voice" json:"default_voice"`
+	PromptPrefix string `yaml:"prompt_prefix" json:"prompt_prefix"`
 }

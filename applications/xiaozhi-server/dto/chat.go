@@ -14,6 +14,8 @@ const (
 	ChatTypeSTT    ChatType = "stt"
 	ChatTypeHello  ChatType = "hello"
 	ChatTypeListen ChatType = "listen"
+	ChatTypeAbort  ChatType = "abort"
+	ChatTypeIOT    ChatType = "iot"
 )
 
 const (

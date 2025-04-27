@@ -1,6 +1,7 @@
 package audio
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/hraban/opus"
 	"github.com/mathiasXie/gin-web/pkg/logger"
+	"github.com/mathiasXie/gin-web/utils"
 )
 
 const FRAME_DURATION_MS = 60
@@ -26,7 +28,9 @@ type AudioByte []byte
 // 返回值: 转换后的Opus数据, 音频时长, 错误信息
 func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, channels int) ([]AudioByte, float64, error) {
 
-	tempMapAudioFile, err := os.CreateTemp("", "to_tts_*.mp3")
+	//tempMapAudioFile, err := os.CreateTemp("", "to_tts_*.mp3")
+	tempMapAudioFile, err := os.Create(fmt.Sprintf("./tmp/audio_to_opus_%s_%s.mp3", time.Now().Format("20060102150405"), utils.GetRandomString(10)))
+
 	if err != nil {
 		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData无法创建临时音频文件: ", err)
 		return nil, 0, err
@@ -36,8 +40,7 @@ func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, chann
 		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData写入临时音频文件失败:", err)
 		return nil, 0, err
 	}
-	defer os.Remove(tempMapAudioFile.Name())
-	// 从音频文件获取PCM数据
+	// 从音频文件获取PCM数据 结束时会删除tempMapAudioFile
 	pcmData, err := extractPcmFromAudio(tempMapAudioFile.Name())
 	if err != nil {
 		logger.CtxError(ctx, "[AudioUtils]AudioToOpusData无法从文件提取PCM数据: ", err)
@@ -175,24 +178,31 @@ func calculateAudioDuration(pcmData []byte, sampleRate int, channels int) float6
 func extractPcmFromAudio(mp3Path string) ([]byte, error) {
 
 	//创建临时PCM文件
-	tempPcmFile, err := os.CreateTemp("", "temp_pcm_extract_*.pcm")
+	tempPcmFile, err := os.Create(fmt.Sprintf("./tmp/temp_pcm_extract_%s_%s.pcm", time.Now().Format("20060102150405"), utils.GetRandomString(10)))
 	if err != nil {
 		fmt.Println("无法创建临时PCM文件: ", err)
 		return nil, err
 	}
 	defer os.Remove(tempPcmFile.Name())
+	// defer os.Remove(mp3Path)
 
 	//使用FFmpeg直接将音频转换为PCM
 	command := []string{"ffmpeg", "-i", mp3Path, "-f", "s16le", "-acodec", "pcm_s16le", "-y", tempPcmFile.Name()}
 
 	//执行FFmpeg命令
 	cmd := exec.Command(command[0], command[1:]...)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("FFmpeg提取PCM数据失败: ", err)
+		fmt.Println("FFmpeg提取PCM数据失败: ", stderr.String())
 		return nil, err
+	} else {
+		//延迟10ms删除文件
+		time.Sleep(10 * time.Millisecond)
+		os.Remove(mp3Path)
 	}
 
 	// 读取PCM文件内容
