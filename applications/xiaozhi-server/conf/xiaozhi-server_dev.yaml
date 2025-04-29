@@ -2,6 +2,8 @@ app_name: xiaozhi-server
 run_mode: test
 server:
   port: 8090
+  host: 192.168.6.138
+  ssl: false
 resource:
   mysql:
     host: 192.168.6.109

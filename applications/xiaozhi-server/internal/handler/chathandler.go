@@ -18,6 +18,7 @@ import (
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader"
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
+	"github.com/mathiasXie/gin-web/utils"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -30,6 +31,7 @@ type ChatHandler struct {
 	clientVoiceStop  bool
 	rpcCtx           context.Context
 	conn             *websocket.Conn
+	clientIP         string
 	sessionID        string
 	userInfo         *dto.UserInfo
 	deviceService    *service.DeviceService
@@ -53,7 +55,30 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 		h.print("服务端关闭连接", "red")
 		conn.Close()
 	}()
-	// client := resource.GetResource().LLMRpcClient.LLMServiceClient
+
+	// 从请求参数中获取设备id
+	deviceID := ctx.Request.Header.Get("device-id")
+	if deviceID == "" {
+		deviceID = ctx.Query("device-id")
+	}
+	if deviceID == "" {
+		h.print("无法从请求头和URL查询参数中获取device-id", "red")
+		return
+	}
+	h.clientIP = utils.GetClientIP(ctx)
+	// 进行认证
+	err = h.Authenticate(ctx.Request.Header)
+	if err != nil {
+		h.print("认证失败", "red")
+		return
+	}
+	// 认证通过,继续处理
+
+	h.deviceService = service.NewDeviceService(ctx, loader.GetDB(ctx, true))
+	h.messageService = service.NewMessageService(ctx, loader.GetDB(ctx, true))
+	h.userService = service.NewUserService(ctx, loader.GetDB(ctx, true))
+	h.roleService = service.NewRoleService(ctx, loader.GetDB(ctx, true))
+
 	// 创建带有元数据的上下文
 	trace_id, _ := ctx.Value(consts.LogID).(string)
 	md := metadata.Pairs("trace_id", trace_id)
@@ -64,13 +89,9 @@ func (h *ChatHandler) Chat(ctx *gin.Context, upgrader websocket.Upgrader) {
 	h.sessionID = trace_id
 	h.userInfo = &dto.UserInfo{}
 
-	h.deviceService = service.NewDeviceService(ctx, loader.GetDB(ctx, true))
-	h.messageService = service.NewMessageService(ctx, loader.GetDB(ctx, true))
-	h.userService = service.NewUserService(ctx, loader.GetDB(ctx, true))
-	h.roleService = service.NewRoleService(ctx, loader.GetDB(ctx, true))
-
 	h.clientListenMode = "manual"
 	h.vadSilenceThreshold = 700
+	h.print("客户端连接成功", "blue")
 	for {
 		// 读取客户端发送的消息
 		messageType, p, err := conn.ReadMessage()
@@ -138,10 +159,6 @@ func (h *ChatHandler) handlerMessage(messageType int, p []byte) error {
 
 func (h *ChatHandler) startToChat(text string) error {
 
-	if !h.checkDeviceBindStatus() {
-		h.print("当前设备未绑定用户,引导用户前往绑定", "yellow")
-		return h.deviceBindHandler()
-	}
 	h.print(fmt.Sprintf("用户说: %s", text), "blue")
 
 	// 大模型服务配置

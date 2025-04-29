@@ -15,63 +15,58 @@ import (
 
 func (h *ChatHandler) handlerHelloMessage(chatRequest *dto.ChatRequest) error {
 
-	h.userInfo.Device = &dto.DeviceInfo{
-		DeviceId:   chatRequest.DeviceID,
-		DeviceName: chatRequest.DeviceName,
-		DeviceMac:  chatRequest.DeviceMac,
-		Token:      chatRequest.Token,
-	}
-
-	// 检查设备是否存在
-	device, err := h.deviceService.GetDeviceByMac(chatRequest.DeviceMac)
-	if err != nil {
-		return err
-	}
-	if device == nil || device.RoleId == 0 {
-		h.print("设备不存在,前往绑定设备,会自动创建", "yellow")
-		return h.deviceBindHandler()
-	} else if device.RoleId > 0 {
-		userInfo, err := h.userService.GetUserByRoleId(int(device.RoleId))
-		if err != nil {
-			h.print(fmt.Sprintf("获取用户信息失败:%s", err.Error()), "red")
-			return err
-		}
-		if userInfo != nil {
-			h.userInfo = userInfo
-			h.userInfo.Device = &dto.DeviceInfo{
-				Id:         int(device.Id),
-				DeviceId:   device.DeviceId,
-				DeviceName: device.DeviceName,
-				DeviceMac:  device.DeviceMac,
-				Token:      device.Token,
-			}
-			prompt := fmt.Sprintf("%s\n%s", config.Instance.Provider.PromptPrefix, h.userInfo.Role.RoleDesc)
-			h.generateChatContext(prompt)
-		}
-	}
-
 	resp2, _ := json.Marshal(dto.ChatResponse{
-		Type:      dto.ChatTypeHello,
-		State:     dto.ChatStateStart,
-		SessionID: h.sessionID,
-		Emotion:   "happy",
+		Type:        dto.ChatTypeHello,
+		State:       dto.ChatStateStart,
+		SessionID:   h.sessionID,
+		Emotion:     "happy",
+		Transport:   "websocket",
+		AudioParams: chatRequest.AudioParams,
 	})
 	log.Println("收到hello消息:", chatRequest)
 	h.print("收到hello消息:", "green")
 	// 向客户端发送响应消息
-	err = h.conn.WriteMessage(websocket.TextMessage, resp2)
+	err := h.conn.WriteMessage(websocket.TextMessage, resp2)
 	if err != nil {
 		log.Println("Error writing message:", err)
 		return err
 	}
 	return nil
-}
+	// h.userInfo.Device = &dto.DeviceInfo{
+	// 	DeviceId:   chatRequest.DeviceID,
+	// 	DeviceName: chatRequest.DeviceName,
+	// 	DeviceMac:  chatRequest.DeviceMac,
+	// 	Token:      chatRequest.Token,
+	// }
+	// h.print(fmt.Sprintf("收到hello消息: %+v", chatRequest), "green")
+	// // 检查设备是否存在
+	// device, err := h.deviceService.GetDeviceByMac(chatRequest.DeviceMac)
+	// if err != nil {
+	// 	return err
+	// }
+	// if device == nil || device.RoleId == 0 {
+	// 	h.print("设备不存在,前往绑定设备,会自动创建", "yellow")
+	// 	h.deviceBindHandler()
+	// } else if device.RoleId > 0 {
+	// 	userInfo, err := h.userService.GetUserByRoleId(int(device.RoleId))
+	// 	if err != nil {
+	// 		h.print(fmt.Sprintf("获取用户信息失败:%s", err.Error()), "red")
+	// 		return err
+	// 	}
+	// 	if userInfo != nil {
+	// 		h.userInfo = userInfo
+	// 		h.userInfo.Device = &dto.DeviceInfo{
+	// 			Id:         int(device.Id),
+	// 			DeviceId:   device.DeviceId,
+	// 			DeviceName: device.DeviceName,
+	// 			DeviceMac:  device.DeviceMac,
+	// 			Token:      device.Token,
+	// 		}
+	// 		prompt := fmt.Sprintf("%s\n%s", config.Instance.Provider.PromptPrefix, h.userInfo.Role.RoleDesc)
+	// 		h.generateChatContext(prompt)
+	// 	}
+	// }
 
-func (h *ChatHandler) deviceBindHandler() error {
-	bindCode := h.deviceService.GenerateBindCode(h.userInfo.Device)
-
-	text := fmt.Sprintf("请前往用户中心绑定设备,验证码是%d", bindCode)
-	h.sendAudioMessage(text)
 	return nil
 }
 

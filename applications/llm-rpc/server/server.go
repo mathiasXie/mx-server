@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	llm "github.com/mathiasXie/gin-web/applications/llm-rpc/internal"
+	"github.com/mathiasXie/gin-web/applications/llm-rpc/internal/llm"
+	"github.com/mathiasXie/gin-web/applications/llm-rpc/internal/nlu"
 	"github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/consts"
 	"github.com/mathiasXie/gin-web/pkg/logger"
@@ -105,4 +106,16 @@ func (s *Server) ModelList(ctx context.Context, req *proto.ModelListRequest) (*p
 		return nil, fmt.Errorf("failed to get models list: %v", err)
 	}
 	return &proto.ModelListResponse{Models: models}, nil
+}
+
+func (s *Server) IndentDetect(ctx context.Context, req *proto.IndentRequest) (*proto.IndentResponse, error) {
+	llmProvider, ctx, err := s.getLLMProvider(ctx, req.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get llm provider: %v", err)
+	}
+	resp, err := nlu.IndentDetect(ctx, llmProvider, req)
+	if err != nil {
+		return nil, fmt.Errorf("indent detect error: %v", err)
+	}
+	return resp, nil
 }

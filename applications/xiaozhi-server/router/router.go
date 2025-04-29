@@ -43,5 +43,13 @@ func InitRouter(ctx context.Context, r *gin.Engine) *gin.Engine {
 			userCenterHandler.SignUp(ctx)
 		})
 	}
+
+	r.POST("/xiaozhi/ota/", func(ctx *gin.Context) {
+		handler.OtaHandler(ctx)
+	})
+	// 激活状态检查
+	r.POST("/xiaozhi/ota/activate", func(ctx *gin.Context) {
+		handler.ActivateHandler(ctx)
+	})
 	return r
 }

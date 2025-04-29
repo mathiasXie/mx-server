@@ -21,7 +21,6 @@ func NewLogrusLogger(conf *config.Config) Logger {
 	err := os.MkdirAll(conf.Log.FileDirectory, os.ModePerm)
 	if err != nil {
 		panic(err)
-		return nil
 	}
 
 	logFilePath := fmt.Sprintf("%s/%s-%%Y%%m%%d-%%H.log", conf.Log.FileDirectory, conf.AppName)
@@ -33,13 +32,12 @@ func NewLogrusLogger(conf *config.Config) Logger {
 	)
 	if err != nil {
 		panic(err)
-		return nil
 	}
 
 	logger := logrus.New()
 	logger.SetOutput(writer)
 	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: "2006-01-02 15:04:05", // Custom timestamp format
+		TimestampFormat: time.DateTime,
 	})
 	logger.SetLevel(logrus.InfoLevel)
 	return &LogrusLogger{entry: logrus.NewEntry(logger), appName: conf.AppName}
@@ -105,8 +103,6 @@ func (l *LogrusLogger) WithContext(ctx context.Context) Logger {
 
 	return &LogrusLogger{entry: l.entry.WithFields(fields)}
 }
-
-// withContext 提取上下文字段并返回新的 Logger 实例
 func (l *LogrusLogger) withContext(ctx context.Context) *LogrusLogger {
 	if ctx == nil {
 		return l

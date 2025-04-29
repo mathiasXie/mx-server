@@ -9,6 +9,7 @@ import (
 
 	"github.com/common-nighthawk/go-figure"
 	"github.com/gin-gonic/gin"
+	"github.com/mathiasXie/cloud_config"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/loader/resource"
 	"github.com/mathiasXie/gin-web/applications/xiaozhi-server/middleware"
@@ -72,6 +73,11 @@ func NewServer(configFile, env string) error {
 	addr := fmt.Sprintf(":%d", config.Instance.Server.Port)
 	fmt.Printf("Starting server at %s:...\n", addr)
 	logger.CtxInfo(ctx, "Starting server at %s:...", addr)
+
+	// 初始化云配置
+	cloud_config.Init(loader.GetDB(ctx, true), config.Instance.AppName)
+	//port := cloud_config.GetConfig("server")["port"]
+
 	err = r.Run(addr)
 	if err != nil {
 		return errors.New("服务启动失败: " + err.Error())

@@ -37,16 +37,16 @@ func (s *DeviceService) GetDeviceByMac(mac string) (*model.AiDevice, error) {
 }
 
 func (s *DeviceService) GetDevice(device *model.AiDevice) error {
-	return s.db.Where("device_id = ?", device.DeviceId).First(device).Error
+	return s.db.Where("id = ?", device.Id).First(device).Error
 }
 
 func (s *DeviceService) UpdateDevice(device *model.AiDevice) error {
-	return s.db.Model(&model.AiDevice{}).Where("device_id = ?", device.DeviceId).Updates(device).Error
+	return s.db.Model(&model.AiDevice{}).Where("id = ?", device.Id).Updates(device).Error
 }
 
-func (s *DeviceService) GenerateBindCode(reqDevice *dto.DeviceInfo) int {
+func (s *DeviceService) GenerateBindCode(reqDevice *dto.OtaRequest, ip string) int {
 	//先检查设备是否存在
-	device, err := s.GetDeviceByMac(reqDevice.DeviceMac)
+	device, err := s.GetDeviceByMac(reqDevice.MacAddress)
 	if err != nil {
 		logger.CtxError(s.ctx, "[GenerateBindCode]GetDeviceByMac error", err)
 		return 0
@@ -54,14 +54,17 @@ func (s *DeviceService) GenerateBindCode(reqDevice *dto.DeviceInfo) int {
 
 	if device == nil {
 		bindCode := s.checkBindCode()
-
 		//创建设备
 		device = &model.AiDevice{
-			DeviceId:   reqDevice.DeviceId,
-			DeviceMac:  reqDevice.DeviceMac,
-			DeviceName: reqDevice.DeviceName,
-			Token:      reqDevice.Token,
-			BindCode:   int32(bindCode),
+			DeviceMac:     reqDevice.MacAddress,
+			BindCode:      int32(bindCode),
+			BoardSsid:     reqDevice.Board.SSID,
+			BoardType:     reqDevice.Board.Type,
+			BoardIp:       reqDevice.Board.IP,
+			Language:      reqDevice.Language,
+			Version:       reqDevice.Application.Version,
+			ChipModelName: reqDevice.ChipModelName,
+			Ip:            ip,
 		}
 		err = s.CreateDevice(device)
 		if err != nil {

@@ -9,6 +9,7 @@ package proto
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/anypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -403,11 +404,175 @@ func (x *ModelListResponse) GetModels() []string {
 	return nil
 }
 
+type IndentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      LLMProvider            `protobuf:"varint,1,opt,name=provider,proto3,enum=llm.LLMProvider" json:"provider,omitempty"`
+	Messages      []*ChatMessage         `protobuf:"bytes,2,rep,name=messages,proto3" json:"messages,omitempty"`
+	ModelId       string                 `protobuf:"bytes,3,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"` // 模型ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IndentRequest) Reset() {
+	*x = IndentRequest{}
+	mi := &file_proto_llm_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IndentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndentRequest) ProtoMessage() {}
+
+func (x *IndentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_llm_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndentRequest.ProtoReflect.Descriptor instead.
+func (*IndentRequest) Descriptor() ([]byte, []int) {
+	return file_proto_llm_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *IndentRequest) GetProvider() LLMProvider {
+	if x != nil {
+		return x.Provider
+	}
+	return LLMProvider_VOLCENGINE
+}
+
+func (x *IndentRequest) GetMessages() []*ChatMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+func (x *IndentRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+type FunctionCall struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Arguments     string                 `protobuf:"bytes,2,opt,name=arguments,proto3" json:"arguments,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FunctionCall) Reset() {
+	*x = FunctionCall{}
+	mi := &file_proto_llm_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FunctionCall) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FunctionCall) ProtoMessage() {}
+
+func (x *FunctionCall) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_llm_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FunctionCall.ProtoReflect.Descriptor instead.
+func (*FunctionCall) Descriptor() ([]byte, []int) {
+	return file_proto_llm_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *FunctionCall) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *FunctionCall) GetArguments() string {
+	if x != nil {
+		return x.Arguments
+	}
+	return ""
+}
+
+type IndentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nlu           string                 `protobuf:"bytes,1,opt,name=nlu,proto3" json:"nlu,omitempty"`
+	FunctionCall  *FunctionCall          `protobuf:"bytes,2,opt,name=function_call,json=functionCall,proto3" json:"function_call,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IndentResponse) Reset() {
+	*x = IndentResponse{}
+	mi := &file_proto_llm_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IndentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndentResponse) ProtoMessage() {}
+
+func (x *IndentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_llm_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndentResponse.ProtoReflect.Descriptor instead.
+func (*IndentResponse) Descriptor() ([]byte, []int) {
+	return file_proto_llm_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *IndentResponse) GetNlu() string {
+	if x != nil {
+		return x.Nlu
+	}
+	return ""
+}
+
+func (x *IndentResponse) GetFunctionCall() *FunctionCall {
+	if x != nil {
+		return x.FunctionCall
+	}
+	return nil
+}
+
 var File_proto_llm_proto protoreflect.FileDescriptor
 
 const file_proto_llm_proto_rawDesc = "" +
 	"\n" +
-	"\x0fproto/llm.proto\x12\x03llm\"\x84\x01\n" +
+	"\x0fproto/llm.proto\x12\x03llm\x1a\x19google/protobuf/any.proto\"\x84\x01\n" +
 	"\vChatRequest\x12,\n" +
 	"\bmessages\x18\x01 \x03(\v2\x10.llm.ChatMessageR\bmessages\x12,\n" +
 	"\bprovider\x18\x02 \x01(\x0e2\x10.llm.LLMProviderR\bprovider\x12\x19\n" +
@@ -424,7 +589,17 @@ const file_proto_llm_proto_rawDesc = "" +
 	"\x10ModelListRequest\x12,\n" +
 	"\bprovider\x18\x01 \x01(\x0e2\x10.llm.LLMProviderR\bprovider\"+\n" +
 	"\x11ModelListResponse\x12\x16\n" +
-	"\x06models\x18\x01 \x03(\tR\x06models*<\n" +
+	"\x06models\x18\x01 \x03(\tR\x06models\"\x86\x01\n" +
+	"\rIndentRequest\x12,\n" +
+	"\bprovider\x18\x01 \x01(\x0e2\x10.llm.LLMProviderR\bprovider\x12,\n" +
+	"\bmessages\x18\x02 \x03(\v2\x10.llm.ChatMessageR\bmessages\x12\x19\n" +
+	"\bmodel_id\x18\x03 \x01(\tR\amodelId\"@\n" +
+	"\fFunctionCall\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
+	"\targuments\x18\x02 \x01(\tR\targuments\"Z\n" +
+	"\x0eIndentResponse\x12\x10\n" +
+	"\x03nlu\x18\x01 \x01(\tR\x03nlu\x126\n" +
+	"\rfunction_call\x18\x02 \x01(\v2\x11.llm.FunctionCallR\ffunctionCall*<\n" +
 	"\vLLMProvider\x12\x0e\n" +
 	"\n" +
 	"VOLCENGINE\x10\x00\x12\n" +
@@ -436,11 +611,12 @@ const file_proto_llm_proto_rawDesc = "" +
 	"\n" +
 	"\x06SYSTEM\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\r\n" +
-	"\tASSISTANT\x10\x022\x81\x01\n" +
+	"\tASSISTANT\x10\x022\xbc\x01\n" +
 	"\n" +
 	"LLMService\x125\n" +
 	"\n" +
-	"ChatStream\x12\x10.llm.ChatRequest\x1a\x11.llm.ChatResponse\"\x000\x01\x12<\n" +
+	"ChatStream\x12\x10.llm.ChatRequest\x1a\x11.llm.ChatResponse\"\x000\x01\x129\n" +
+	"\fIndentDetect\x12\x12.llm.IndentRequest\x1a\x13.llm.IndentResponse\"\x00\x12<\n" +
 	"\tModelList\x12\x15.llm.ModelListRequest\x1a\x16.llm.ModelListResponse\"\x00B:Z8github.com/mathiasXie/gin-web/applications/llm-rpc/protob\x06proto3"
 
 var (
@@ -456,7 +632,7 @@ func file_proto_llm_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_llm_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_proto_llm_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_llm_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_llm_proto_goTypes = []any{
 	(LLMProvider)(0),          // 0: llm.LLMProvider
 	(ChatMessageRole)(0),      // 1: llm.ChatMessageRole
@@ -465,21 +641,29 @@ var file_proto_llm_proto_goTypes = []any{
 	(*ChatResponse)(nil),      // 4: llm.ChatResponse
 	(*ModelListRequest)(nil),  // 5: llm.ModelListRequest
 	(*ModelListResponse)(nil), // 6: llm.ModelListResponse
+	(*IndentRequest)(nil),     // 7: llm.IndentRequest
+	(*FunctionCall)(nil),      // 8: llm.FunctionCall
+	(*IndentResponse)(nil),    // 9: llm.IndentResponse
 }
 var file_proto_llm_proto_depIdxs = []int32{
-	3, // 0: llm.ChatRequest.messages:type_name -> llm.ChatMessage
-	0, // 1: llm.ChatRequest.provider:type_name -> llm.LLMProvider
-	1, // 2: llm.ChatMessage.role:type_name -> llm.ChatMessageRole
-	0, // 3: llm.ModelListRequest.provider:type_name -> llm.LLMProvider
-	2, // 4: llm.LLMService.ChatStream:input_type -> llm.ChatRequest
-	5, // 5: llm.LLMService.ModelList:input_type -> llm.ModelListRequest
-	4, // 6: llm.LLMService.ChatStream:output_type -> llm.ChatResponse
-	6, // 7: llm.LLMService.ModelList:output_type -> llm.ModelListResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3,  // 0: llm.ChatRequest.messages:type_name -> llm.ChatMessage
+	0,  // 1: llm.ChatRequest.provider:type_name -> llm.LLMProvider
+	1,  // 2: llm.ChatMessage.role:type_name -> llm.ChatMessageRole
+	0,  // 3: llm.ModelListRequest.provider:type_name -> llm.LLMProvider
+	0,  // 4: llm.IndentRequest.provider:type_name -> llm.LLMProvider
+	3,  // 5: llm.IndentRequest.messages:type_name -> llm.ChatMessage
+	8,  // 6: llm.IndentResponse.function_call:type_name -> llm.FunctionCall
+	2,  // 7: llm.LLMService.ChatStream:input_type -> llm.ChatRequest
+	7,  // 8: llm.LLMService.IndentDetect:input_type -> llm.IndentRequest
+	5,  // 9: llm.LLMService.ModelList:input_type -> llm.ModelListRequest
+	4,  // 10: llm.LLMService.ChatStream:output_type -> llm.ChatResponse
+	9,  // 11: llm.LLMService.IndentDetect:output_type -> llm.IndentResponse
+	6,  // 12: llm.LLMService.ModelList:output_type -> llm.ModelListResponse
+	10, // [10:13] is the sub-list for method output_type
+	7,  // [7:10] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_llm_proto_init() }
@@ -493,7 +677,7 @@ func file_proto_llm_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_llm_proto_rawDesc), len(file_proto_llm_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   5,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

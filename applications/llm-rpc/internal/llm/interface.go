@@ -10,6 +10,7 @@ import (
 type LLMProvider interface {
 	ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error
 	GetModelList(ctx context.Context) ([]string, error)
+	ChatNoStream(ctx context.Context, modelID string, messages []*proto.ChatMessage) (string, error)
 }
 
 type ChatStreamResponse struct {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/pkg/logger"
@@ -12,29 +13,28 @@ import (
 	"github.com/openai/openai-go/option"
 )
 
-type GLMLLM struct {
+type OpenAILLM struct {
 	config Config
 	client *openai.Client
 }
 
-// NewGLMLLM 创建新的智谱LLM实例
-func NewGLMLLM(config Config) (LLMProvider, error) {
+func NewOpenAILLM(config Config) (LLMProvider, error) {
 
 	if config.APIKey == "" {
-		return nil, fmt.Errorf("glm llm requires an API key")
+		return nil, fmt.Errorf("openai llm requires an API key")
 	}
 	client := openai.NewClient(
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(config.BaseURL),
 	)
-	return &GLMLLM{
+	return &OpenAILLM{
 		config: config,
 		client: client,
 	}, nil
 }
 
 // ChatStream 实现流式对话
-func (a *GLMLLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
+func (a *OpenAILLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
 	// 构建消息列表
 	chatMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
 	for i, msg := range messages {
@@ -76,7 +76,7 @@ func (a *GLMLLM) ChatStream(ctx context.Context, modelID string, messages []*pro
 
 	}
 	totalContentStr := strings.Join(totalContent, "")
-	logger.CtxInfo(ctx, "GLMLLM[ChatStream] 流式对话结束: ", totalContentStr)
+	logger.CtxInfo(ctx, "OpenAILLM[ChatStream] 流式对话结束: ", totalContentStr)
 	if stream.Err() != nil {
 		return stream.Err()
 	}
@@ -88,6 +88,41 @@ func (a *GLMLLM) ChatStream(ctx context.Context, modelID string, messages []*pro
 	return nil
 }
 
-func (a *GLMLLM) GetModelList(ctx context.Context) ([]string, error) {
+// ChatNoStream 实现一次性返回对话
+func (a *OpenAILLM) ChatNoStream(ctx context.Context, modelID string, messages []*proto.ChatMessage) (string, error) {
+	// 构建消息列表
+	startTime := time.Now()
+	chatMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
+	for i, msg := range messages {
+		switch msg.Role {
+		case proto.ChatMessageRole_USER:
+			chatMessages[i] = openai.UserMessage(msg.Content)
+		case proto.ChatMessageRole_ASSISTANT:
+			chatMessages[i] = openai.AssistantMessage(msg.Content)
+		case proto.ChatMessageRole_SYSTEM:
+			chatMessages[i] = openai.SystemMessage(msg.Content)
+		}
+	}
+	// 创建请求
+	chatCompletion, err := a.client.Chat.Completions.New(
+		ctx,
+		openai.ChatCompletionNewParams{
+			Messages: openai.F(chatMessages),
+			Model:    openai.F(modelID),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	var resMessage string
+	for _, choice := range chatCompletion.Choices {
+		resMessage = fmt.Sprintf("%s%s", resMessage, choice.Message.Content)
+	}
+	logger.CtxInfo(ctx, "[ChatNoStream] 对话结束:", resMessage, ";耗时:", time.Since(startTime).Seconds())
+	return resMessage, nil
+}
+
+func (a *OpenAILLM) GetModelList(ctx context.Context) ([]string, error) {
 	return a.config.Models, nil
 }

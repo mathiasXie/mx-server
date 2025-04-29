@@ -8,10 +8,15 @@ protoc --go_out=proto/pb/ --go_opt=paths=source_relative \
 package llm;
 option go_package = "github.com/mathiasXie/gin-web/applications/llm-rpc/proto";
 
+import "google/protobuf/any.proto";
+
 // LLM服务定义
 service LLMService {
     // 大模型对话流式返回
     rpc ChatStream (ChatRequest) returns (stream ChatResponse) {}
+
+    // 对一段对话进行意图推测
+    rpc IndentDetect (IndentRequest) returns (IndentResponse) {}
 
     // 获取模型列表
     rpc ModelList (ModelListRequest) returns (ModelListResponse) {}
@@ -59,4 +64,20 @@ message ModelListRequest {
 // 获取模型列表响应
 message ModelListResponse {
   repeated string models = 1; // 模型列表
+}
+
+message IndentRequest {
+  LLMProvider provider = 1;   
+  repeated ChatMessage messages = 2;  
+  string model_id = 3;          // 模型ID   
+}
+
+message FunctionCall {
+  string name = 1;
+  string arguments = 2;
+}
+
+message IndentResponse {
+  string nlu = 1;
+  FunctionCall function_call = 2;
 }

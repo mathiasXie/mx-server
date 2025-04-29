@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LLMService_ChatStream_FullMethodName = "/llm.LLMService/ChatStream"
-	LLMService_ModelList_FullMethodName  = "/llm.LLMService/ModelList"
+	LLMService_ChatStream_FullMethodName   = "/llm.LLMService/ChatStream"
+	LLMService_IndentDetect_FullMethodName = "/llm.LLMService/IndentDetect"
+	LLMService_ModelList_FullMethodName    = "/llm.LLMService/ModelList"
 )
 
 // LLMServiceClient is the client API for LLMService service.
@@ -31,6 +32,8 @@ const (
 type LLMServiceClient interface {
 	// 大模型对话流式返回
 	ChatStream(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
+	// 对一段对话进行意图推测
+	IndentDetect(ctx context.Context, in *IndentRequest, opts ...grpc.CallOption) (*IndentResponse, error)
 	// 获取模型列表
 	ModelList(ctx context.Context, in *ModelListRequest, opts ...grpc.CallOption) (*ModelListResponse, error)
 }
@@ -62,6 +65,16 @@ func (c *lLMServiceClient) ChatStream(ctx context.Context, in *ChatRequest, opts
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type LLMService_ChatStreamClient = grpc.ServerStreamingClient[ChatResponse]
 
+func (c *lLMServiceClient) IndentDetect(ctx context.Context, in *IndentRequest, opts ...grpc.CallOption) (*IndentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IndentResponse)
+	err := c.cc.Invoke(ctx, LLMService_IndentDetect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *lLMServiceClient) ModelList(ctx context.Context, in *ModelListRequest, opts ...grpc.CallOption) (*ModelListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ModelListResponse)
@@ -80,6 +93,8 @@ func (c *lLMServiceClient) ModelList(ctx context.Context, in *ModelListRequest, 
 type LLMServiceServer interface {
 	// 大模型对话流式返回
 	ChatStream(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
+	// 对一段对话进行意图推测
+	IndentDetect(context.Context, *IndentRequest) (*IndentResponse, error)
 	// 获取模型列表
 	ModelList(context.Context, *ModelListRequest) (*ModelListResponse, error)
 	mustEmbedUnimplementedLLMServiceServer()
@@ -94,6 +109,9 @@ type UnimplementedLLMServiceServer struct{}
 
 func (UnimplementedLLMServiceServer) ChatStream(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method ChatStream not implemented")
+}
+func (UnimplementedLLMServiceServer) IndentDetect(context.Context, *IndentRequest) (*IndentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IndentDetect not implemented")
 }
 func (UnimplementedLLMServiceServer) ModelList(context.Context, *ModelListRequest) (*ModelListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ModelList not implemented")
@@ -130,6 +148,24 @@ func _LLMService_ChatStream_Handler(srv interface{}, stream grpc.ServerStream) e
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type LLMService_ChatStreamServer = grpc.ServerStreamingServer[ChatResponse]
 
+func _LLMService_IndentDetect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IndentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LLMServiceServer).IndentDetect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LLMService_IndentDetect_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LLMServiceServer).IndentDetect(ctx, req.(*IndentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LLMService_ModelList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ModelListRequest)
 	if err := dec(in); err != nil {
@@ -155,6 +191,10 @@ var LLMService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "llm.LLMService",
 	HandlerType: (*LLMServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "IndentDetect",
+			Handler:    _LLMService_IndentDetect_Handler,
+		},
 		{
 			MethodName: "ModelList",
 			Handler:    _LLMService_ModelList_Handler,

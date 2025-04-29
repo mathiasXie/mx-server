@@ -28,22 +28,33 @@ const (
 )
 
 type ChatResponse struct {
-	Type      ChatType  `json:"type"`
-	State     ChatState `json:"state"`
-	SessionID string    `json:"session_id"`
-	Text      string    `json:"text"`
-	Emotion   string    `json:"emotion"`
+	Type        ChatType    `json:"type"`
+	State       ChatState   `json:"state"`
+	SessionID   string      `json:"session_id"`
+	Text        string      `json:"text"`
+	Emotion     string      `json:"emotion"`
+	Transport   string      `json:"transport"`
+	AudioParams AudioParams `json:"audio_params"`
 }
 
 // {"type":"hello","device_id":"web_test_device","device_name":"Web测试设备","device_mac":"00:11:22:33:44:55","token":"your-token1"}
 type ChatRequest struct {
-	Type       ChatType  `json:"type"`
-	DeviceID   string    `json:"device_id"`
-	DeviceName string    `json:"device_name"`
-	DeviceMac  string    `json:"device_mac"`
-	Token      string    `json:"token"`
-	Mode       string    `json:"mode"`
-	State      ChatState `json:"state"`
-	Text       string    `json:"text"`
-	SessionID  string    `json:"session_id"`
+	Type        ChatType    `json:"type"`
+	DeviceID    string      `json:"device_id"`
+	DeviceName  string      `json:"device_name"`
+	DeviceMac   string      `json:"device_mac"`
+	Token       string      `json:"token"`
+	Mode        string      `json:"mode"`
+	State       ChatState   `json:"state"`
+	Text        string      `json:"text"`
+	SessionID   string      `json:"session_id"`
+	Transport   string      `json:"transport"`
+	AudioParams AudioParams `json:"audio_params"`
+}
+
+type AudioParams struct {
+	SampleRate    int    `json:"sample_rate"`
+	Format        string `json:"format"`
+	Channels      int    `json:"channels"`
+	FrameDuration int    `json:"frame_duration"`
 }

@@ -2,8 +2,10 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 	"github.com/mathiasXie/gin-web/pkg/logger"
@@ -11,29 +13,29 @@ import (
 	"github.com/openai/openai-go/option"
 )
 
-type AliyunLLM struct {
+type VolcEngineLLM struct {
 	config Config
 	client *openai.Client
 }
 
-// NewAliyunLLM 创建新的阿里云LLM实例
-func NewAliyunLLM(config Config) (LLMProvider, error) {
+// NewVolcEngineLLM创建新的火山引擎
+func NewVolcEngineLLM(config Config) (LLMProvider, error) {
 
 	if config.APIKey == "" {
-		return nil, fmt.Errorf("aliyun llm requires an API key")
+		return nil, fmt.Errorf("voclengine llm requires an API key")
 	}
 	client := openai.NewClient(
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(config.BaseURL),
 	)
-	return &AliyunLLM{
+	return &VolcEngineLLM{
 		config: config,
 		client: client,
 	}, nil
 }
 
 // ChatStream 实现流式对话
-func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
+func (a *VolcEngineLLM) ChatStream(ctx context.Context, modelID string, messages []*proto.ChatMessage, respChan chan<- ChatStreamResponse) error {
 	// 构建消息列表
 	chatMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
 	for i, msg := range messages {
@@ -46,7 +48,8 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 			chatMessages[i] = openai.SystemMessage(msg.Content)
 		}
 	}
-	logger.CtxInfo(ctx, "chat messages: %v", chatMessages)
+	m, _ := json.Marshal(chatMessages)
+	logger.CtxInfo(ctx, "chat messages:", string(m))
 	// 创建流式请求
 	stream := a.client.Chat.Completions.NewStreaming(
 		ctx,
@@ -74,7 +77,7 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 
 	}
 	totalContentStr := strings.Join(totalContent, "")
-	logger.CtxInfo(ctx, "AliyunLLM[ChatStream] 流式对话结束: ", totalContentStr)
+	logger.CtxInfo(ctx, "VolcEngineLLM[ChatStream] 流式对话结束: ", totalContentStr)
 	if stream.Err() != nil {
 		return stream.Err()
 	}
@@ -86,6 +89,41 @@ func (a *AliyunLLM) ChatStream(ctx context.Context, modelID string, messages []*
 	return nil
 }
 
-func (a *AliyunLLM) GetModelList(ctx context.Context) ([]string, error) {
+// ChatNoStream 实现一次性返回对话
+func (a *VolcEngineLLM) ChatNoStream(ctx context.Context, modelID string, messages []*proto.ChatMessage) (string, error) {
+	// 构建消息列表
+	startTime := time.Now()
+	chatMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
+	for i, msg := range messages {
+		switch msg.Role {
+		case proto.ChatMessageRole_USER:
+			chatMessages[i] = openai.UserMessage(msg.Content)
+		case proto.ChatMessageRole_ASSISTANT:
+			chatMessages[i] = openai.AssistantMessage(msg.Content)
+		case proto.ChatMessageRole_SYSTEM:
+			chatMessages[i] = openai.SystemMessage(msg.Content)
+		}
+	}
+	// 创建请求
+	chatCompletion, err := a.client.Chat.Completions.New(
+		ctx,
+		openai.ChatCompletionNewParams{
+			Messages: openai.F(chatMessages),
+			Model:    openai.F(modelID),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	var resMessage string
+	for _, choice := range chatCompletion.Choices {
+		resMessage = fmt.Sprintf("%s%s", resMessage, choice.Message.Content)
+	}
+	logger.CtxInfo(ctx, "[ChatNoStream] 对话结束:", resMessage, ";耗时:", time.Since(startTime).Seconds())
+	return resMessage, nil
+}
+
+func (a *VolcEngineLLM) GetModelList(ctx context.Context) ([]string, error) {
 	return a.config.Models, nil
 }
