@@ -43,6 +43,7 @@ var indentSystemPromp = `
 		- 播放音乐：无歌名时，song_name设为"random"
 		- 如果没有明显的意图，应按照继续聊天意图处理
 		- 只返回纯JSON，不要任何其他内容
+		- 音量控制是device
 `
 
 func IndentDetect(ctx context.Context, llm llm.LLMProvider, req *proto.IndentRequest) (*proto.IndentResponse, error) {

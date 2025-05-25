@@ -26,7 +26,7 @@ type AudioByte []byte
 // sampleRate: 采样率（如16000）
 // channels: 声道数（1为单声道，2为立体声）
 // 返回值: 转换后的Opus数据, 音频时长, 错误信息
-func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, channels int) ([]AudioByte, float64, error) {
+func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, channels int) ([][]byte, float64, error) {
 
 	//tempMapAudioFile, err := os.CreateTemp("", "to_tts_*.mp3")
 	tempMapAudioFile, err := os.Create(fmt.Sprintf("./tmp/audio_to_opus_%s_%s.mp3", time.Now().Format("20060102150405"), utils.GetRandomString(10)))
@@ -64,7 +64,7 @@ func AudioToOpusData(ctx context.Context, mp3Audio []byte, sampleRate int, chann
 // sampleRate: 采样率（如16000）
 // channels: 声道数（1为单声道，2为立体声）
 // frameDurationMs: 帧长度（毫秒，如20、40、60等）
-func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDurationMs int) ([]AudioByte, error) {
+func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDurationMs int) ([][]byte, error) {
 	// 创建Opus编码器
 	opusEncoder, err := opus.NewEncoder(sampleRate, channels, 2048) // OPUS_APPLICATION_VOIP = 2048
 	if err != nil {
@@ -88,7 +88,7 @@ func convertPcmToOpus(pcmData []byte, sampleRate int, channels int, frameDuratio
 	}
 
 	// 分帧处理
-	var opusFrames []AudioByte
+	var opusFrames [][]byte
 	for i := 0; i < len(floatData); i += frameSize {
 		end := i + frameSize
 		if end > len(floatData) {
@@ -183,11 +183,8 @@ func extractPcmFromAudio(mp3Path string) ([]byte, error) {
 		fmt.Println("无法创建临时PCM文件: ", err)
 		return nil, err
 	}
-	defer os.Remove(tempPcmFile.Name())
-	// defer os.Remove(mp3Path)
-
 	//使用FFmpeg直接将音频转换为PCM
-	command := []string{"ffmpeg", "-i", mp3Path, "-f", "s16le", "-acodec", "pcm_s16le", "-y", tempPcmFile.Name()}
+	command := []string{"ffmpeg", "-f", "mp3", "-i", mp3Path, "-f", "s16le", "-acodec", "pcm_s16le", "-y", tempPcmFile.Name()}
 
 	//执行FFmpeg命令
 	cmd := exec.Command(command[0], command[1:]...)
@@ -200,9 +197,13 @@ func extractPcmFromAudio(mp3Path string) ([]byte, error) {
 		fmt.Println("FFmpeg提取PCM数据失败: ", stderr.String())
 		return nil, err
 	} else {
-		//延迟10ms删除文件
-		time.Sleep(10 * time.Millisecond)
-		os.Remove(mp3Path)
+		//延迟100ms删除文件
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			//fmt.Println("将删除临时mp3")
+			os.Remove(mp3Path)
+			os.Remove(tempPcmFile.Name())
+		}()
 	}
 
 	// 读取PCM文件内容

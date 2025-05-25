@@ -124,7 +124,7 @@ func (d *VolcEngineTTS) TextToSpeechStream(ctx context.Context, text string, lan
 		return fmt.Errorf("failed to send request: %v", err)
 	}
 	var audio []byte
-	buferLenght := 10240
+	buferLenght := 10240 * 3
 	for {
 		var message []byte
 		_, message, err := c.ReadMessage()

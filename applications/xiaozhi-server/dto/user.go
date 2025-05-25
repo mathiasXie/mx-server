@@ -3,12 +3,18 @@ package dto
 import llm_proto "github.com/mathiasXie/gin-web/applications/llm-rpc/proto/pb/proto"
 
 type UserInfo struct {
-	ID           int                      `json:"id"`
-	Username     string                   `json:"username"`
-	Email        string                   `json:"email"`
-	Role         *UserRole                `json:"role"`
-	Device       *DeviceInfo              `json:"device"`
+	ID       int       `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Role     *UserRole `json:"role"`
+
 	ChatMessages []*llm_proto.ChatMessage `json:"chat_messages"`
+}
+
+type Device struct {
+	Id        int    `json:"id"`
+	DeviceMac string `json:"device_mac"`
+	Language  string `json:"language"`
 }
 
 type UserRole struct {

@@ -33,10 +33,13 @@ resource:
 provider: # 服务提供商，与rpc的provider一致，注意大小写
   llm: ALIYUN
   default_model: qwen-plus
-  asr: VOSK
+  asr: ALIYUN
   tts: ALIYUN
   default_voice: longxiaochun
-  prompt_prefix: 请按照以下角色描述简洁、清晰、简练的语言方式回答用户的问题,不要添加任何解释,每次回复最多3句话,回复内容在100字以内。 #人设前缀
+  prompt_prefix: 请按照以下角色描述简洁、清晰、简练的语言方式回答用户的问题,不要添加任何解释,回复内容在100字以内。 #人设前缀
+  indent: #意图推测使用的大模型
+    llm: ALIYUN
+    model: qwen-plus
 languages:
   - language: 中文
     code: zh-CN

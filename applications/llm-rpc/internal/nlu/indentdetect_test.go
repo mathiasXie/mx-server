@@ -43,7 +43,7 @@ func TestIndentDetect(t *testing.T) {
 		},
 		{
 			Role:    proto.ChatMessageRole_USER,
-			Content: "现在伦敦时间几点了？",
+			Content: "帮我设置一个10点半的闹钟",
 		},
 	}
 

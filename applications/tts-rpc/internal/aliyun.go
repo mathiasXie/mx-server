@@ -137,7 +137,7 @@ func (m *AliyunTTS) TextToSpeechStream(ctx context.Context, text string, languag
 
 	// 循环等待响应
 	var audio []byte
-	buferLenght := 10240
+	buferLenght := 10240 * 3
 	for {
 		msgType, message, err := conn.ReadMessage()
 		if err != nil {
